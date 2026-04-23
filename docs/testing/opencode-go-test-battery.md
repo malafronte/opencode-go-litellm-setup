@@ -560,71 +560,71 @@ Blocco completo per `claude-opus-4-1-20250805`:
 }
 ```
 
-### GO-05 - Lettura e sintesi
+### GO-05 - Reading and summary
 
-Prompt suggerito:
+Suggested prompt:
 
 ```text
-Leggi docs/spec.md e riassumi in 5 punti gli obiettivi del progetto. Non modificare alcun file.
+Read docs/spec.md and summarize the project objectives in 5 bullet points. Do not modify any file.
 ```
 
-Esito atteso:
+Expected outcome:
 
-- risposta coerente;
-- nessun errore LiteLLM;
-- nessun errore di modello non trovato.
+- coherent response;
+- no LiteLLM errors;
+- no model-not-found errors.
 
-### GO-06 - Multi-turn con modifica reale
+### GO-06 - Multi-turn with real edit
 
 Prompt 1:
 
 ```text
-Crea un file temporaneo docs/_proxy_battery_test.md con titolo, data di oggi e una breve nota di test.
+Create a temporary file docs/_proxy_battery_test.md with a title, today's date, and a short test note.
 ```
 
 Prompt 2:
 
 ```text
-Riapri il file appena creato e aggiungi una riga finale con scritto: test multi-turn completato.
+Reopen the file you just created and add a final line that says: multi-turn test completed.
 ```
 
 Prompt 3:
 
 ```text
-Elimina il file temporaneo docs/_proxy_battery_test.md.
+Delete the temporary file docs/_proxy_battery_test.md.
 ```
 
-Esito atteso:
+Expected outcome:
 
-- tutte le operazioni riescono;
-- nessun `400` del proxy;
-- nessun errore su `reasoning_content missing`.
+- all operations succeed;
+- no proxy `400`;
+- no `reasoning_content missing` errors.
 
-### GO-07 - Cambio modello
+### GO-07 - Model switch
 
-Ripetere almeno GO-05 e GO-06 con:
+Repeat at least GO-05 and GO-06 with:
 
-- un modello della famiglia `chat/completions`;
-- un secondo modello della stessa famiglia;
-- almeno un modello della famiglia `messages`, se configurato nel proxy.
+- one model from the `chat/completions` family;
+- a second model from the same family;
+- at least one model from the `messages` family, if configured in the proxy.
 
-## 10. Ordine di esecuzione raccomandato
+## 10. Recommended execution order
 
-1. Eseguire `GO-01` e `GO-02` su tutti gli alias esposti.
-2. Eseguire `GO-03` su almeno due modelli della famiglia `chat/completions`.
-3. Eseguire `GO-04` sui modelli della famiglia `messages`.
-4. Solo dopo passare a `GO-05`, `GO-06` e `GO-07` in `Claude Code`.
+1. Run `GO-01` and `GO-02` on all exposed aliases.
+2. Run `GO-03` on at least two models from the `chat/completions` family.
+3. Run `GO-04` on the models from the `messages` family.
+4. Only then move to `GO-05`, `GO-06`, and `GO-07` in `Claude Code`.
 
-## 11. Uso della batteria come criterio di accettazione
+## 11. Using the battery as an acceptance criterion
 
-Il setup puo essere considerato accettabile se:
+The setup can be considered acceptable if:
 
-1. tutti gli smoke test passano sugli alias configurati;
-2. almeno un modello `chat/completions` supera il `tool-loop`;
-3. `Claude Code` completa almeno un flusso multi-turn reale senza errori del proxy.
+1. all smoke tests pass on the configured aliases;
+2. at least one `chat/completions` model passes the `tool-loop`;
+3. `Claude Code` completes at least one real multi-turn flow without proxy errors.
 
-## 12. Limiti della batteria
+## 12. Limits of the battery
 
-- Un test positivo non dimostra che tutti i modelli supportino tool-use nello stesso modo.
-- I modelli della famiglia `messages` potrebbero richiedere test aggiuntivi specifici in base alle loro capacita reali.
-- La batteria e pensata per convalidare il bridge locale, non per benchmarkare la qualita dei modelli.
+- A positive test does not prove that all models support tool use in the same way.
+- Models in the `messages` family may require additional model-specific tests based on their actual capabilities.
+- The battery is intended to validate the local bridge, not to benchmark model quality.

@@ -12,19 +12,19 @@ $pythonExe = Join-Path $RuntimeDir 'Scripts\python.exe'
 $litellmExe = Join-Path $RuntimeDir 'Scripts\litellm.exe'
 
 if (-not (Test-Path $pythonExe)) {
-    throw "Runtime LiteLLM non trovato in $RuntimeDir. Eseguire prima install-litellm-fork.ps1."
+    throw "LiteLLM runtime not found in $RuntimeDir. Run install-litellm-fork.ps1 first."
 }
 
 if (-not (Test-Path $litellmExe)) {
-    throw "Entrypoint LiteLLM non trovato in $litellmExe."
+    throw "LiteLLM entrypoint not found in $litellmExe."
 }
 
 if (-not (Test-Path $ConfigPath)) {
-    throw "Config LiteLLM non trovata in $ConfigPath."
+    throw "LiteLLM config not found in $ConfigPath."
 }
 
 if (-not $env:OPENCODE_GO_API_KEY) {
-    throw 'Variabile OPENCODE_GO_API_KEY non trovata nell''ambiente corrente.'
+    throw 'OPENCODE_GO_API_KEY was not found in the current environment.'
 }
 
 $args = @(

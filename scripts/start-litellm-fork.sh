@@ -11,22 +11,22 @@ PYTHON_EXE="$RUNTIME_DIR/bin/python"
 LITELLM_EXE="$RUNTIME_DIR/bin/litellm"
 
 if [[ ! -x "$PYTHON_EXE" ]]; then
-  echo "Runtime LiteLLM non trovato in $RUNTIME_DIR. Eseguire prima install-litellm-fork.sh." >&2
+  echo "LiteLLM runtime not found in $RUNTIME_DIR. Run install-litellm-fork.sh first." >&2
   exit 1
 fi
 
 if [[ ! -x "$LITELLM_EXE" ]]; then
-  echo "Entrypoint LiteLLM non trovato in $LITELLM_EXE." >&2
+  echo "LiteLLM entrypoint not found in $LITELLM_EXE." >&2
   exit 1
 fi
 
 if [[ ! -f "$CONFIG_PATH" ]]; then
-  echo "Config LiteLLM non trovata in $CONFIG_PATH." >&2
+  echo "LiteLLM config not found in $CONFIG_PATH." >&2
   exit 1
 fi
 
 if [[ -z "${OPENCODE_GO_API_KEY:-}" ]]; then
-  echo "Variabile OPENCODE_GO_API_KEY non trovata nell'ambiente corrente." >&2
+  echo "OPENCODE_GO_API_KEY was not found in the current environment." >&2
   exit 1
 fi
 

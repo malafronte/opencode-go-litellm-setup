@@ -1,15 +1,15 @@
-# Template di configurazione per usare piu modelli OpenCode Go dietro un proxy LiteLLM locale.
+# Configuration template for using multiple OpenCode Go models behind a local LiteLLM proxy.
 #
-# Obiettivo:
-# - esporre alias stabili lato Claude Code;
-# - distinguere le famiglie di endpoint di OpenCode Go;
-# - evitare patch model-specifiche quando il problema reale e nella traduzione
-#   Anthropic -> OpenAI o nella gestione del reasoning.
+# Goal:
+# - expose stable aliases for Claude Code;
+# - distinguish OpenCode Go endpoint families;
+# - avoid model-specific patches when the real issue is Anthropic
+#   -> OpenAI translation or reasoning handling.
 
 model_list:
   # -------------------------------------------------------------------------
-  # Famiglia A: modelli esposti da OpenCode Go su /v1/chat/completions
-  # Questi modelli possono essere trattati come upstream OpenAI-compatible.
+  # Family A: models exposed by OpenCode Go on /v1/chat/completions
+  # These models can be treated as OpenAI-compatible upstreams.
   # -------------------------------------------------------------------------
   - model_name: kimi-k2.6
     litellm_params:
@@ -72,11 +72,11 @@ model_list:
       api_key: os.environ/OPENCODE_GO_API_KEY
 
   # -------------------------------------------------------------------------
-  # Famiglia B: modelli esposti da OpenCode Go su /v1/messages
-  # Questi modelli sono Anthropic-compatible e non richiedono la traduzione
-  # Anthropic -> OpenAI che serve invece alla famiglia A.
-  # NOTE: per provider Anthropic-compatible si passa la base senza /v1/messages,
-  # perche LiteLLM aggiunge gia quel suffisso.
+  # Family B: models exposed by OpenCode Go on /v1/messages
+  # These models are Anthropic-compatible and do not require the
+  # Anthropic -> OpenAI translation needed by Family A.
+  # NOTE: for Anthropic-compatible providers, pass the base without /v1/messages,
+  # because LiteLLM already appends that suffix.
   # -------------------------------------------------------------------------
   - model_name: minimax-m2.5
     litellm_params:

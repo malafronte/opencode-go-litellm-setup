@@ -7,12 +7,12 @@ RUNTIME_DIR="${3:-$HOME/.claude/litellm-runtime}"
 FORCE_REINSTALL="${FORCE_REINSTALL:-0}"
 
 if ! command -v python3 >/dev/null 2>&1; then
-  echo "python3 non trovato nel PATH." >&2
+  echo "python3 not found in PATH." >&2
   exit 1
 fi
 
 if ! command -v git >/dev/null 2>&1; then
-  echo "git non trovato nel PATH. Serve per installare LiteLLM dalla fork GitHub." >&2
+  echo "git not found in PATH. It is required to install LiteLLM from the GitHub fork." >&2
   exit 1
 fi
 
@@ -40,6 +40,6 @@ cat > "$METADATA_PATH" <<EOF
 }
 EOF
 
-echo "LiteLLM installato da $REPO@$REF"
+echo "LiteLLM installed from $REPO@$REF"
 echo "Runtime: $RUNTIME_DIR"
 echo "Metadata: $METADATA_PATH"

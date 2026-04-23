@@ -29,11 +29,11 @@ function Invoke-NativeCommand {
 }
 
 if (-not (Test-CommandExists -Name 'py')) {
-    throw 'Python launcher `py` non trovato nel PATH.'
+    throw 'Python launcher `py` not found in PATH.'
 }
 
 if (-not (Test-CommandExists -Name 'git')) {
-    throw 'Git non trovato nel PATH. Serve per installare LiteLLM dalla fork GitHub.'
+    throw 'Git not found in PATH. It is required to install LiteLLM from the GitHub fork.'
 }
 
 $pythonExe = Join-Path $RuntimeDir 'Scripts\python.exe'
@@ -58,10 +58,10 @@ if ($ForceReinstall -and (Test-Path $RuntimeDir)) {
 
 if (-not (Test-Path $pythonExe)) {
     New-Item -ItemType Directory -Path $RuntimeDir -Force | Out-Null
-    Invoke-NativeCommand -FilePath 'py' -ArgumentList @('-m', 'venv', $RuntimeDir) -FailureMessage "Creazione del virtual environment fallita in $RuntimeDir."
+    Invoke-NativeCommand -FilePath 'py' -ArgumentList @('-m', 'venv', $RuntimeDir) -FailureMessage "Failed to create virtual environment in $RuntimeDir."
 }
 
-Invoke-NativeCommand -FilePath $pythonExe -ArgumentList ($pipArgs + @('install', '--upgrade', 'pip')) -FailureMessage 'Aggiornamento di pip fallito.'
+Invoke-NativeCommand -FilePath $pythonExe -ArgumentList ($pipArgs + @('install', '--upgrade', 'pip')) -FailureMessage 'Failed to upgrade pip.'
 
 if (Test-Path $SourceDir) {
     if (-not $sourceDirProvided) {
@@ -74,11 +74,11 @@ if (Test-Path $SourceDir) {
     }
 }
 
-Invoke-NativeCommand -FilePath 'git' -ArgumentList @('-c', 'core.longpaths=true', 'clone', '--branch', $Ref, '--depth', '1', $repoUrl, $SourceDir) -FailureMessage "Clone di $Repo@$Ref fallito in $SourceDir."
+Invoke-NativeCommand -FilePath 'git' -ArgumentList @('-c', 'core.longpaths=true', 'clone', '--branch', $Ref, '--depth', '1', $repoUrl, $SourceDir) -FailureMessage "Failed to clone $Repo@$Ref into $SourceDir."
 
 Push-Location $SourceDir
 try {
-    Invoke-NativeCommand -FilePath $pythonExe -ArgumentList ($pipArgs + @('install', '--upgrade', '.[proxy]')) -FailureMessage "Installazione di LiteLLM da $SourceDir fallita."
+    Invoke-NativeCommand -FilePath $pythonExe -ArgumentList ($pipArgs + @('install', '--upgrade', '.[proxy]')) -FailureMessage "Failed to install LiteLLM from $SourceDir."
 }
 finally {
     Pop-Location
@@ -95,6 +95,6 @@ $metadata = [ordered]@{
 $metadataPath = Join-Path $RuntimeDir 'install-metadata.json'
 $metadata | ConvertTo-Json | Set-Content -Path $metadataPath -Encoding UTF8
 
-Write-Host "LiteLLM installato da $Repo@$Ref"
+Write-Host "LiteLLM installed from $Repo@$Ref"
 Write-Host "Runtime: $RuntimeDir"
 Write-Host "Metadata: $metadataPath"

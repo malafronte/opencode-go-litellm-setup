@@ -1,141 +1,188 @@
 # OpenCode Go + LiteLLM Gateway Setup
 
-This repository documents and packages a practical LiteLLM-based gateway for using OpenCode Go models through API-shape translation layers, while also carrying the fixes introduced in the upstream LiteLLM pull request for Anthropic message handling.
+[![Windows](https://img.shields.io/badge/Windows-supported-0F7B0F?style=for-the-badge&logo=windows)](#copypaste-setup)
+[![Linux/macOS](https://img.shields.io/badge/Linux%20%2F%20macOS-supported-1F6FEB?style=for-the-badge&logo=linux)](#copypaste-setup)
+[![LiteLLM fork](https://img.shields.io/badge/LiteLLM-malafronte%2Flitellm-F97316?style=for-the-badge&logo=github)](https://github.com/malafronte/litellm)
+[![OpenCode Go](https://img.shields.io/badge/OpenCode%20Go-upstream%20target-111827?style=for-the-badge)](#why-this-exists)
+
+Use Anthropic-style clients with OpenCode Go models through a local LiteLLM gateway that can translate protocol shape, preserve reasoning content more reliably, and smooth out multi-turn tool flows.
 
 > **What this repository enables**
 >
-> - Route **Anthropic-style clients** to **OpenAI-style upstream models**
-> - Keep a **single client-facing API shape** while changing upstream model families
-> - Preserve **reasoning content**, sanitize leaked `</think>` markers, and improve tool-loop fidelity
+> - Route **Anthropic-style clients** to both **OpenAI-style** and **Anthropic-style** upstreams
+> - Keep a **single client-facing API shape** while swapping model families behind the proxy
+> - Apply focused LiteLLM fixes for **reasoning preservation**, `</think>` cleanup, and **tool-loop stability**
 
-## Visual overview
+| Start here | Go to |
+| --- | --- |
+| Full setup guide | [docs/gateway-setup-guide.md](docs/gateway-setup-guide.md) |
+| Model routing reference | [docs/model-routing-reference.md](docs/model-routing-reference.md) |
+| Proxy test battery | [docs/testing/opencode-go-test-battery.md](docs/testing/opencode-go-test-battery.md) |
 
-### Protocol translation at a glance
+**Jump to**
 
-```text
-┌──────────────────────────┐
-│ Anthropic-style client   │
-│ e.g. Claude Code         │
-│ sends /v1/messages       │
-└────────────┬─────────────┘
-	     │
-	     ▼
-┌──────────────────────────┐
-│ LiteLLM local gateway    │
-│ route + translate + fix  │
-└───────┬──────────┬───────┘
-	│          │
-	│          └──────────────────────────────┐
-	▼                                         ▼
-┌──────────────────────────┐         ┌──────────────────────────┐
-│ OpenAI-style upstream    │         │ Anthropic-style upstream │
-│ /v1/chat/completions     │         │ /v1/messages             │
-│ e.g. Kimi K2.6           │         │ e.g. MiniMax M2.7        │
-└──────────────────────────┘         └──────────────────────────┘
+[Downloads](#downloads) · [Copy/paste setup](#copypaste-setup) · [Quick start](#quick-start) · [Repository layout](#repository-layout) · [Upstream references](#upstream-references)
+
+## Downloads
+
+| Tool | Download |
+| --- | --- |
+| Git | [git-scm.com/downloads](https://git-scm.com/downloads) |
+| Python 3 | [python.org/downloads](https://www.python.org/downloads/) |
+| PowerShell 7 | [github.com/PowerShell/PowerShell](https://github.com/PowerShell/PowerShell) |
+
+## Copy/paste setup
+
+### Windows
+
+```powershell
+pwsh -File .\scripts\install-litellm-fork.ps1 -Repo "malafronte/litellm" -Ref "v1.83.11-nightly-opencode-go1"
+New-Item -ItemType Directory -Force -Path "$HOME\.claude\litellm" | Out-Null
+Copy-Item .\config\opencode-go-config.template.yaml "$HOME\.claude\litellm\config.yaml" -Force
+$env:OPENCODE_GO_API_KEY = "<YOUR_OPENCODE_GO_API_KEY>"
+pwsh -File .\scripts\start-litellm-fork.ps1 -ConfigPath "$HOME\.claude\litellm\config.yaml"
 ```
 
-### What the gateway is doing
+### Linux/macOS
 
-| Step | Function | Result |
+```bash
+./scripts/install-litellm-fork.sh "malafronte/litellm" "v1.83.11-nightly-opencode-go1"
+mkdir -p "$HOME/.claude/litellm"
+cp ./config/opencode-go-config.template.yaml "$HOME/.claude/litellm/config.yaml"
+export OPENCODE_GO_API_KEY="<YOUR_OPENCODE_GO_API_KEY>"
+./scripts/start-litellm-fork.sh "$HOME/.claude/litellm-runtime" "$HOME/.claude/litellm/config.yaml"
+```
+
+Client values to keep aligned:
+
+```json
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://127.0.0.1:4000",
+    "ANTHROPIC_AUTH_TOKEN": "local-litellm-key",
+    "ANTHROPIC_MODEL": "kimi-k2.6",
+    "ANTHROPIC_CUSTOM_MODEL_OPTION": "kimi-k2.6"
+  }
+}
+```
+
+## At a glance
+
+```text
+Anthropic-style client
+e.g. Claude Code
+        |
+        |  /v1/messages
+        v
+LiteLLM local gateway
+route + translate + patch
+    |                    |
+    |                    |
+    v                    v
+OpenAI-style upstream    Anthropic-style upstream
+/v1/chat/completions     /v1/messages
+e.g. Kimi K2.6           e.g. MiniMax M2.7
+```
+
+## Why this exists
+
+Some clients speak only the Anthropic Messages API, while upstream models behind OpenCode Go may expose different API families. This repository packages the gateway pattern that lets the client stay fixed while the backend routing changes.
+
+In practical terms:
+
+- a client such as `Claude Code` can keep sending Anthropic-style `v1/messages` requests;
+- LiteLLM can route those requests to the correct OpenCode Go upstream family;
+- responses are normalized back into an Anthropic-compatible shape before returning to the client.
+
+That means one client contract, multiple upstream families, and fewer edge-case failures when reasoning or tool calls are involved.
+
+## What the gateway is doing
+
+| Step | Gateway action | Why it matters |
 | --- | --- | --- |
-| 1 | Accept a client request in Anthropic `v1/messages` format | Client does not need to support multiple provider APIs |
-| 2 | Resolve the selected LiteLLM alias | A stable client-facing model name is preserved |
-| 3 | Route to the correct OpenCode Go upstream endpoint | The gateway chooses OpenAI-style or Anthropic-style transport |
+| 1 | Accept an Anthropic `v1/messages` request | The client does not need provider-specific logic |
+| 2 | Resolve the requested LiteLLM alias | Client-facing model names stay stable |
+| 3 | Pick the correct OpenCode Go endpoint family | The proxy chooses the right transport automatically |
 | 4 | Normalize the response back to Anthropic-compatible output | The client sees one consistent API contract |
-| 5 | Apply PR fixes for reasoning and `</think>` sanitation | Cleaner final text and more reliable tool loops |
-
-In practice, this setup allows a client that speaks Anthropic-style `v1/messages` to reach upstream providers that expose either:
-
-- OpenAI-compatible `v1/chat/completions` endpoints, or
-- Anthropic-compatible `v1/messages` endpoints.
-
-For example:
-
-- a client such as `Claude Code`, which only speaks the Anthropic Messages API, can send `v1/messages` requests to LiteLLM;
-- LiteLLM can then translate those requests into OpenAI-style `v1/chat/completions` calls for an upstream model such as `Kimi K2.6` served through OpenCode Go;
-- the response is translated back into Anthropic-compatible output before being returned to the client.
-
-The same gateway can also forward Anthropic-style requests to upstream models that already expose native `v1/messages` semantics, such as Anthropic-compatible providers, without requiring the client to change its protocol.
-
-The gateway is centered on LiteLLM, with a small but important patch set that improves fidelity when handling reasoning-bearing Anthropic responses.
+| 5 | Apply bridge fixes for reasoning and `</think>` cleanup | Final output is cleaner and tool loops are more reliable |
 
 ## What this repository provides
 
-- documentation for configuring LiteLLM in front of OpenCode Go;
-- example client settings for Anthropic-style consumers;
-- a regression patch for the Anthropic message transformation path;
-- test scripts for validating proxy health, model routing, tool loops, and think-tag sanitization.
+| Area | Includes |
+| --- | --- |
+| Configuration | LiteLLM templates for OpenCode Go routing |
+| Client examples | Anthropic-style preset examples |
+| Patch set | Regression fix for the Anthropic message transformation path |
+| Validation | Scripts and docs for proxy health, model routing, and tool-loop checks |
 
 ### Typical use case
 
 ```text
 Anthropic-only client
-	│
-	│ /v1/messages
-	▼
+        |
+        | /v1/messages
+        v
 LiteLLM gateway
-	│
-	│ translated /v1/chat/completions
-	▼
+        |
+        | translated /v1/chat/completions
+        v
 OpenCode Go -> Kimi K2.6
 ```
 
-This is the key capability: the client continues to speak Anthropic Messages, while the upstream model can remain OpenAI-compatible.
+The key idea is simple: the client keeps speaking Anthropic Messages, while the upstream model can remain OpenAI-compatible.
 
 ## Why the patch matters
 
-The upstream LiteLLM pull request referenced by this repository addresses concrete issues in the Anthropic message bridge:
+The referenced upstream LiteLLM work improves concrete failure points in the Anthropic bridge:
 
 - preservation of reasoning content extracted from upstream thinking blocks;
-- sanitization of leaked `</think>` markers before final text is returned to clients;
-- more reliable behavior in multi-turn tool-use flows.
+- sanitization of leaked `</think>` markers before final text is returned;
+- more reliable multi-turn behavior in tool-use flows.
 
-This makes the gateway more robust when an Anthropic-format client is routed to non-native upstream APIs through LiteLLM.
-
-## Repository layout
-
-- `docs/` — setup guides and reference documentation
-- `docs/testing/` — validation procedure and test battery notes
-- `config/` — configuration templates
-- `examples/anthropic-client-presets/` — example client presets for Anthropic-style consumers
-- `patches/` — patch files that capture the LiteLLM changes
-- `scripts/` — helper scripts for install and startup workflows
-- `tests/proxy-battery/` — direct proxy regression and routing checks
+Those fixes matter most when an Anthropic-format client is routed through LiteLLM to a non-native upstream API.
 
 ## Quick start
 
 ### 1. Install the patched LiteLLM runtime
 
-- Windows: `./scripts/install-litellm-fork.ps1`
-- Linux/macOS: `./scripts/install-litellm-fork.sh`
+- Windows: [`scripts/install-litellm-fork.ps1`](scripts/install-litellm-fork.ps1)
+- Linux/macOS: [`scripts/install-litellm-fork.sh`](scripts/install-litellm-fork.sh)
 
 ### 2. Configure LiteLLM
 
-Copy `config/opencode-go-config.template.yaml` to your LiteLLM runtime location, then set `OPENCODE_GO_API_KEY` in the environment used by the proxy process.
+Use [`config/opencode-go-config.template.yaml`](config/opencode-go-config.template.yaml) as the starting template, then set `OPENCODE_GO_API_KEY` in the environment used by the proxy process.
 
 ### 3. Start the gateway
 
-- Windows: `./scripts/start-litellm-fork.ps1`
-- Linux/macOS: `./scripts/start-litellm-fork.sh`
+- Windows: [`scripts/start-litellm-fork.ps1`](scripts/start-litellm-fork.ps1)
+- Linux/macOS: [`scripts/start-litellm-fork.sh`](scripts/start-litellm-fork.sh)
 
 ### 4. Validate the bridge
 
-Run the battery in `tests/proxy-battery/run-opencode-go-battery.py` against the local proxy.
+Run [`tests/proxy-battery/run-opencode-go-battery.py`](tests/proxy-battery/run-opencode-go-battery.py) against the local proxy.
 
-## Documentation
+## Repository layout
 
-- `docs/gateway-setup-guide.md` — full setup and configuration guide
-- `docs/model-routing-reference.md` — compact model mapping reference
-- `docs/testing/opencode-go-test-battery.md` — structured validation plan
+| Path | Purpose |
+| --- | --- |
+| [`docs/`](docs/) | Setup guides and reference documentation |
+| [`docs/testing/`](docs/testing/) | Validation procedure and battery notes |
+| [`config/`](config/) | Configuration templates |
+| [`examples/anthropic-client-presets/`](examples/anthropic-client-presets/) | Example presets for Anthropic-style consumers |
+| [`patches/`](patches/) | Patch files capturing the LiteLLM changes |
+| [`scripts/`](scripts/) | Install and startup helpers |
+| [`tests/proxy-battery/`](tests/proxy-battery/) | Direct proxy regression and routing checks |
 
 ## Example materials
 
-- `examples/anthropic-client-presets/` contains ready-made presets for Anthropic-style clients.
+[`examples/anthropic-client-presets/`](examples/anthropic-client-presets/) contains ready-made presets for Anthropic-style clients.
 
-These files are examples, not a hard product requirement. The main value of this repository is the general LiteLLM gateway pattern plus the Anthropic bridge fixes.
+These files are examples, not a hard product requirement. The main value of the repository is the LiteLLM gateway pattern plus the Anthropic bridge fixes.
 
-## Upstream reference
+## Upstream references
 
-- LiteLLM PR: `BerriAI/litellm#26285`
-- Upstream repository: `https://github.com/BerriAI/litellm`
-- Fork used for the patch work: `https://github.com/malafronte/litellm`
+| Reference | Link |
+| --- | --- |
+| LiteLLM pull request | [BerriAI/litellm#26285](https://github.com/BerriAI/litellm/pull/26285) |
+| Upstream repository | [BerriAI/litellm](https://github.com/BerriAI/litellm) |
+| Fork used for patch work | [malafronte/litellm](https://github.com/malafronte/litellm) |

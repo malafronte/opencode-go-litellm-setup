@@ -1,5 +1,133 @@
 # OpenCode Go + LiteLLM Gateway Setup Guide
 
+## Getting started in 2 minutes
+
+If you want the shortest path to a working local gateway, use this section first and come back to the rest of the guide only when you need the deeper explanation.
+
+### What you need before starting
+
+Download or verify these tools first:
+
+- `Git` — required because the runtime is installed from the fork at <https://github.com/malafronte/litellm>
+- `Python` 3.10+ — required to create the local runtime
+- Windows only: PowerShell 7+ (`pwsh`) is recommended
+- An `OPENCODE_GO_API_KEY` value from your OpenCode Go account
+
+Quick checks:
+
+```powershell
+git --version
+py --version
+pwsh --version
+```
+
+```bash
+git --version
+python3 --version
+```
+
+### Which LiteLLM fork and ref to use
+
+This repository is designed to install LiteLLM from the fork at:
+
+- <https://github.com/malafronte/litellm>
+
+The [helper scripts](../scripts/) are already prepared for the validated ref:
+
+- `v1.83.11-nightly-opencode-go1`
+
+If you use the provided install scripts, pass the fork explicitly so there is no ambiguity.
+
+### Fastest path on Windows
+
+1. Install the patched LiteLLM runtime from the fork:
+
+```powershell
+pwsh -File .\scripts\install-litellm-fork.ps1 -Repo "malafronte/litellm" -Ref "v1.83.11-nightly-opencode-go1"
+```
+
+2. Create your LiteLLM config from the repository template:
+
+```powershell
+New-Item -ItemType Directory -Force -Path "$HOME\.claude\litellm" | Out-Null
+Copy-Item .\config\opencode-go-config.template.yaml "$HOME\.claude\litellm\config.yaml" -Force
+```
+
+3. Export your OpenCode Go API key in the current terminal:
+
+```powershell
+$env:OPENCODE_GO_API_KEY = "<YOUR_OPENCODE_GO_API_KEY>"
+```
+
+4. Start the gateway:
+
+```powershell
+pwsh -File .\scripts\start-litellm-fork.ps1 -ConfigPath "$HOME\.claude\litellm\config.yaml"
+```
+
+5. Point your client to the local proxy:
+
+```json
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://127.0.0.1:4000",
+    "ANTHROPIC_AUTH_TOKEN": "local-litellm-key",
+    "ANTHROPIC_MODEL": "kimi-k2.6",
+    "ANTHROPIC_CUSTOM_MODEL_OPTION": "kimi-k2.6"
+  }
+}
+```
+
+At that point, the fastest next read is:
+
+- [`examples/anthropic-client-presets/settings-kimi-k2.6.json`](../examples/anthropic-client-presets/settings-kimi-k2.6.json)
+- [`config/opencode-go-config.template.yaml`](../config/opencode-go-config.template.yaml)
+
+### Fastest path on Linux/macOS
+
+1. Install the patched LiteLLM runtime from the fork:
+
+```bash
+./scripts/install-litellm-fork.sh "malafronte/litellm" "v1.83.11-nightly-opencode-go1"
+```
+
+2. Create your LiteLLM config from the repository template:
+
+```bash
+mkdir -p "$HOME/.claude/litellm"
+cp ./config/opencode-go-config.template.yaml "$HOME/.claude/litellm/config.yaml"
+```
+
+3. Export your OpenCode Go API key:
+
+```bash
+export OPENCODE_GO_API_KEY="<YOUR_OPENCODE_GO_API_KEY>"
+```
+
+4. Start the gateway:
+
+```bash
+./scripts/start-litellm-fork.sh "$HOME/.claude/litellm-runtime" "$HOME/.claude/litellm/config.yaml"
+```
+
+5. Point your client to the local proxy with the same values shown in the Windows example above.
+
+### What is happening in those 2 minutes
+
+- the install script creates a dedicated local LiteLLM runtime;
+- the runtime is installed from `malafronte/litellm` at ref `v1.83.11-nightly-opencode-go1`;
+- the config template exposes ready-to-edit model aliases;
+- the startup script launches the gateway on `http://127.0.0.1:4000`;
+- your client only needs to target that local proxy.
+
+### Immediate next steps
+
+Once the proxy is up, use these sections next:
+
+- section `7. Quick reference table` to switch models correctly;
+- section `9. Practical example: how to switch from one model to another` for concrete alias changes;
+- section `14. Essential troubleshooting` if the proxy starts but the client does not behave as expected.
+
 ## 1. Purpose
 
 This guide explains how to expose OpenCode Go models through a local LiteLLM gateway when the client and the upstream provider do not speak the same API dialect.
@@ -290,11 +418,11 @@ general_settings:
   master_key: local-litellm-key
 ```
 
-## 9. Esempio pratico: come passare da un modello all'altro
+## 9. Practical example: how to switch from one model to another
 
-### 9.1 Per usare `glm-5`
+### 9.1 To use `glm-5`
 
-In `config.yaml` deve esistere:
+This entry must exist in `config.yaml`:
 
 ```yaml
 - model_name: glm-5
@@ -304,7 +432,7 @@ In `config.yaml` deve esistere:
     api_key: os.environ/OPENCODE_GO_API_KEY
 ```
 
-In `settings.json` devi mettere:
+Set this in `settings.json`:
 
 ```json
 {
@@ -315,9 +443,9 @@ In `settings.json` devi mettere:
 }
 ```
 
-### 9.2 Per usare `minimax-m2.7`
+### 9.2 To use `minimax-m2.7`
 
-In `config.yaml` deve esistere:
+This entry must exist in `config.yaml`:
 
 ```yaml
 - model_name: minimax-m2.7
@@ -327,7 +455,7 @@ In `config.yaml` deve esistere:
     api_key: os.environ/OPENCODE_GO_API_KEY
 ```
 
-In `settings.json` devi mettere:
+Set this in `settings.json`:
 
 ```json
 {
@@ -338,30 +466,30 @@ In `settings.json` devi mettere:
 }
 ```
 
-## 10. Alias Claude-style: quando servono davvero
+## 10. Claude-style aliases: when they are actually needed
 
-Gli alias come:
+Aliases such as:
 
 - `claude-haiku-4-5-20251001`
 - `claude-sonnet-4-5-20250929`
 - `claude-opus-4-1-20250805`
 
-non sono modelli OpenCode Go distinti.
-Sono alias di compatibilita utili quando `Claude Code` invia al proxy un nome modello Anthropic nativo invece dell'alias scelto dall'utente.
+are not distinct OpenCode Go models.
+They are compatibility aliases that are useful when `Claude Code` sends the proxy a native Anthropic model name instead of the alias chosen by the user.
 
-Questi alias servono soprattutto in due casi:
+These aliases are mainly useful in two cases:
 
-1. test manuali con preset dedicati;
-2. riduzione di errori `ProxyModelNotFoundError` quando il client cambia nome modello in modo implicito.
+1. manual tests with dedicated presets;
+2. reducing `ProxyModelNotFoundError` errors when the client changes the model name implicitly.
 
-Se vuoi usare davvero un modello OpenCode Go specifico, la regola consigliata resta:
+If you really want to use a specific OpenCode Go model, the recommended rule is still:
 
-- esporre nel proxy un alias uguale al nome reale del modello OpenCode Go;
-- impostare `ANTHROPIC_MODEL` e `ANTHROPIC_CUSTOM_MODEL_OPTION` con quello stesso alias.
+- expose an alias in the proxy that matches the real OpenCode Go model name;
+- set `ANTHROPIC_MODEL` and `ANTHROPIC_CUSTOM_MODEL_OPTION` to that same alias.
 
-## 11. Struttura dei file coinvolti
+## 11. File structure involved
 
-Il setup usa i seguenti file nella home dell'utente:
+The setup uses the following files in the user's home directory:
 
 ```text
 ~/.claude/
@@ -373,76 +501,85 @@ Il setup usa i seguenti file nella home dell'utente:
     test-litellm.ps1
 ```
 
-Nel repository sono presenti anche questi file di supporto:
+The repository also includes these support files:
 
 ```text
-assets/
-  litellm-fork/
-    opencode-go-config.template.yaml
-    settings-presets/
-    tests/
+config/
+  opencode-go-config.template.yaml
+examples/
+  anthropic-client-presets/
+patches/
+  litellm-anthropic-reasoning-content.diff
+scripts/
+  install-litellm-fork.ps1
+  install-litellm-fork.sh
+  start-litellm-fork.ps1
+  start-litellm-fork.sh
+tests/
+  proxy-battery/
+  run-opencode-go-battery.py
 ```
 
-## 12. Procedura operativa su Windows
+## 12. Operational procedure on Windows
 
-### 12.1 Salvare la API key nell'ambiente utente
+### 12.1 Save the API key in the user environment
 
 ```powershell
-pwsh -File "$HOME\.claude\litellm\set-opencode-go-key.ps1" -ApiKey "<CHIAVE_OPENCODE_GO>"
+pwsh -File "$HOME\.claude\litellm\set-opencode-go-key.ps1" -ApiKey "<OPENCODE_GO_API_KEY>"
 ```
 
-### 12.2 Aprire un nuovo terminale
+### 12.2 Open a new terminal
 
-Questo passaggio e importante, perche lo script di avvio del proxy controlla la variabile nell'ambiente della sessione corrente.
+This step is important because the proxy startup script checks the variable in the current session environment.
 
-### 12.3 Scegliere il modello nel `config.yaml`
+### 12.3 Choose the model in `config.yaml`
 
-Se il modello e gia nel file, non devi aggiungere altro.
-Se il modello non e presente, usa la tabella del capitolo 7 per aggiungere la riga corretta.
+If the model is already in the file, you do not need to add anything else.
+If the model is not present, use the table in chapter 7 to add the correct entry.
 
-### 12.4 Impostare il modello in `settings.json`
+### 12.4 Set the model in `settings.json`
 
-Imposta:
+Set:
 
 - `ANTHROPIC_MODEL`
 - `ANTHROPIC_CUSTOM_MODEL_OPTION`
 
-con l'alias del modello che vuoi usare.
+to the alias of the model you want to use.
 
-### 12.5 Avviare il gateway locale
+### 12.5 Start the local gateway
 
 ```powershell
 pwsh -File "$HOME\.claude\litellm\start-litellm.ps1"
 ```
 
-Se la sessione non ha ereditato la variabile ambiente, conviene aprire un nuovo terminale oppure esportarla esplicitamente prima dell'avvio.
+If the session did not inherit the environment variable, it is best to open a new terminal or export it explicitly before startup.
 
-### 12.6 Testare il bridge prima di aprire Claude Code
+### 12.6 Test the bridge before opening Claude Code
 
 ```powershell
 pwsh -File "$HOME\.claude\litellm\test-litellm.ps1"
 ```
 
-### 12.7 Aprire una nuova sessione di Claude Code
+### 12.7 Open a new Claude Code session
 
-Dopo la modifica del modello o del proxy, conviene sempre aprire una nuova sessione del client.
+After changing the model or proxy, it is always best to open a new client session.
 
-## 13. Procedura equivalente su Linux
+## 13. Equivalent procedure on Linux
 
-### 13.1 Esportare la chiave API
+### 13.1 Export the API key
 
 ```bash
-export OPENCODE_GO_API_KEY="<CHIAVE_OPENCODE_GO>"
+export OPENCODE_GO_API_KEY="<OPENCODE_GO_API_KEY>"
 ```
 
-### 13.2 Usare un `config.yaml` coerente con la famiglia del modello
+### 13.2 Use a `config.yaml` consistent with the model family
 
-Il principio e identico a Windows:
+The principle is identical to Windows:
 
-- famiglia A -> `openai/<modello>` e `https://opencode.ai/zen/go/v1`;
-- famiglia B -> `anthropic/<modello>` e `https://opencode.ai/zen/go`.
+- family A -> `openai/<model>` and `https://opencode.ai/zen/go/v1`;
+- family B -> `anthropic/<model>` and `https://opencode.ai/zen/go`.
 
-### 13.3 Avviare LiteLLM
+### 13.3 Start LiteLLM
 
 ```bash
 uvx --from 'litellm[proxy]==1.83.11' litellm \
@@ -451,7 +588,7 @@ uvx --from 'litellm[proxy]==1.83.11' litellm \
   --port 4000
 ```
 
-### 13.4 Verificare il bridge con `curl`
+### 13.4 Verify the bridge with `curl`
 
 ```bash
 curl http://127.0.0.1:4000/v1/messages \
@@ -470,181 +607,181 @@ curl http://127.0.0.1:4000/v1/messages \
   }'
 ```
 
-## 14. Troubleshooting essenziale
+## 14. Essential troubleshooting
 
 ### 14.1 `Missing OPENCODE_GO_API_KEY`
 
-Cause probabili:
+Likely causes:
 
-- la chiave non e stata salvata;
-- il terminale non e stato riaperto;
-- la chiave esiste nell'ambiente utente ma non nella sessione corrente.
+- the key was not saved;
+- the terminal was not reopened;
+- the key exists in the user environment but not in the current session.
 
 ### 14.2 `Invalid model name passed`
 
-Questo errore indica che `ANTHROPIC_MODEL` non corrisponde a un `model_name` esposto nel `config.yaml`.
+This error means that `ANTHROPIC_MODEL` does not match a `model_name` exposed in `config.yaml`.
 
-Correzione:
+Fix:
 
-1. verificare l'alias scelto in `settings.json`;
-2. verificare che esista in `model_list`;
-3. riavviare il proxy.
+1. verify the chosen alias in `settings.json`;
+2. verify that it exists in `model_list`;
+3. restart the proxy.
 
-### 14.3 Routing verso `v1/responses`
+### 14.3 Routing to `v1/responses`
 
-Se il proxy usa il percorso sbagliato per i modelli della famiglia A, verificare:
+If the proxy uses the wrong path for Family A models, verify:
 
 ```yaml
 litellm_settings:
   use_chat_completions_url_for_anthropic_messages: true
 ```
 
-### 14.4 Errori su `reasoning_content`
+### 14.4 `reasoning_content` errors
 
-Per i turni multi-turn con tool-use, mantenere:
+For multi-turn tool-use turns, keep:
 
 ```yaml
 litellm_settings:
   modify_params: true
 ```
 
-### 14.5 Caso speciale `minimax-m2.5`
+### 14.5 Special case `minimax-m2.5`
 
-Nel test automatico e stato osservato un caso specifico: il primo turno di tool-use puo fermarsi con `max_tokens` e con il marker `<minimax:tool_call>` al posto del blocco `tool_use` strutturato.
+In automated testing, a specific case was observed: the first tool-use turn can stop at `max_tokens` and with the `<minimax:tool_call>` marker instead of a structured `tool_use` block.
 
-La batteria del repository gestisce gia questo caso con una variante dedicata.
+The repository battery already handles this case with a dedicated variant.
 
-## 15. Verifica consigliata dopo ogni cambio modello
+## 15. Recommended verification after each model change
 
-La sequenza minima consigliata e questa:
+The minimum recommended sequence is:
 
-1. aggiornare `settings.json` con l'alias del modello scelto;
-2. verificare che `config.yaml` esponga quel modello con provider e `api_base` corretti;
-3. riavviare `LiteLLM`;
-4. eseguire il test locale del proxy;
-5. solo dopo aprire una nuova sessione di `Claude Code`.
+1. update `settings.json` with the alias of the chosen model;
+2. verify that `config.yaml` exposes that model with the correct provider and `api_base`;
+3. restart `LiteLLM`;
+4. run the local proxy test;
+5. only then open a new `Claude Code` session.
 
-Per una verifica piu ampia si vedano anche:
+For broader verification, see also:
 
-- `docs/opencode-go-test-battery.md`
+- `docs/testing/opencode-go-test-battery.md`
 - `docs/litellm-fork-distribution.md`
 
-## 16. Checklist rapida: cosa cambiare per usare un modello diverso
+## 16. Quick checklist: what to change to use a different model
 
-Quando vuoi usare un modello diverso, chiediti solo queste quattro cose:
+When you want to use a different model, ask only these four questions:
 
-1. il modello appartiene alla famiglia A o alla famiglia B?
-2. nel `config.yaml` c'e una riga con `model_name` uguale al nome del modello?
-3. il valore di `litellm_params.model` usa `openai/` o `anthropic/` correttamente?
-4. `ANTHROPIC_MODEL` e `ANTHROPIC_CUSTOM_MODEL_OPTION` puntano allo stesso alias?
+1. does the model belong to Family A or Family B?
+2. in `config.yaml`, is there an entry with `model_name` equal to the model name?
+3. does the value of `litellm_params.model` use `openai/` or `anthropic/` correctly?
+4. do `ANTHROPIC_MODEL` and `ANTHROPIC_CUSTOM_MODEL_OPTION` point to the same alias?
 
-Se queste quattro condizioni sono vere, il resto del setup non cambia.
+If all four conditions are true, the rest of the setup does not change.
 
-## 17. Conclusione
+## 17. Conclusion
 
-Il workaround con `LiteLLM` non va piu letto come una soluzione specifica per `Kimi K2.6`, ma come una guida generale per usare i modelli attuali di `OpenCode Go` dietro `Claude Code`.
+The `LiteLLM` workaround should no longer be read as a solution specific to `Kimi K2.6`, but as a general guide for using the current `OpenCode Go` models behind `Claude Code`.
 
-Il punto decisivo non e il nome del modello in se, ma la famiglia di endpoint a cui appartiene:
+The decisive point is not the model name itself, but the endpoint family it belongs to:
 
-- famiglia A -> upstream OpenAI-compatible;
-- famiglia B -> upstream Anthropic-compatible.
+- family A -> OpenAI-compatible upstream;
+- family B -> Anthropic-compatible upstream.
 
-Una volta chiarita questa distinzione, per usare un modello diverso l'utente deve cambiare soltanto:
+Once this distinction is clear, to use a different model the user only needs to change:
 
-- l'entry corrispondente in `config.yaml`;
-- l'alias impostato in `ANTHROPIC_MODEL` e `ANTHROPIC_CUSTOM_MODEL_OPTION`.
+- the corresponding entry in `config.yaml`;
+- the alias set in `ANTHROPIC_MODEL` and `ANTHROPIC_CUSTOM_MODEL_OPTION`.
 
-Il resto del bridge locale puo restare invariato.
+The rest of the local bridge can stay unchanged.
 
-| Elemento | Deve coincidere con | Motivo |
+| Element | Must match | Reason |
 | --- | --- | --- |
-| `ANTHROPIC_AUTH_TOKEN` | `general_settings.master_key` | il client deve autenticarsi sul proxy locale |
-| `ANTHROPIC_MODEL` | `model_list[].model_name` | il client deve chiedere un alias esposto dal gateway |
-| `api_key: os.environ/OPENCODE_GO_API_KEY` | variabile ambiente reale `OPENCODE_GO_API_KEY` | LiteLLM legge la chiave dall'ambiente |
-| `ANTHROPIC_BASE_URL` | host e porta di LiteLLM | il client deve colpire il proxy e non il provider remoto |
+| `ANTHROPIC_AUTH_TOKEN` | `general_settings.master_key` | the client must authenticate against the local proxy |
+| `ANTHROPIC_MODEL` | `model_list[].model_name` | the client must request an alias exposed by the gateway |
+| `api_key: os.environ/OPENCODE_GO_API_KEY` | the real `OPENCODE_GO_API_KEY` environment variable | LiteLLM reads the key from the environment |
+| `ANTHROPIC_BASE_URL` | LiteLLM host and port | the client must hit the proxy and not the remote provider |
 
-## 10. Problemi noti e troubleshooting
+## 10. Known issues and troubleshooting
 
-### 10.1 Errore: `Missing OPENCODE_GO_API_KEY`
+### 10.1 Error: `Missing OPENCODE_GO_API_KEY`
 
-Cause probabili:
+Likely causes:
 
-- la chiave non e stata salvata;
-- e stata salvata ma il terminale non e stato riaperto;
-- la variabile e presente in un altro profilo utente.
+- the key was not saved;
+- it was saved but the terminal was not reopened;
+- the variable is present in a different user profile.
 
-Correzione:
+Fix:
 
-1. rieseguire lo script di salvataggio della chiave;
-2. aprire un nuovo terminale;
-3. verificare con il comando adatto alla shell in uso.
+1. rerun the key-saving script;
+2. open a new terminal;
+3. verify it with the command appropriate for the current shell.
 
-### 10.2 Errore: `uvx is not available on PATH`
+### 10.2 Error: `uvx is not available on PATH`
 
-Cause probabili:
+Likely causes:
 
-- `uv` non e installato;
-- l'installazione esiste ma il `PATH` non e aggiornato.
+- `uv` is not installed;
+- the installation exists but `PATH` is not updated.
 
-Correzione:
+Fix:
 
-1. installare `uv`;
-2. riaprire il terminale;
-3. verificare `uvx --version`.
+1. install `uv`;
+2. reopen the terminal;
+3. verify `uvx --version`.
 
-### 10.3 Errore iniziale: `No module named 'websockets'`
+### 10.3 Initial error: `No module named 'websockets'`
 
-Questo problema emerge quando si tenta di avviare `LiteLLM` senza l'extra `proxy`.
+This problem appears when you try to start `LiteLLM` without the `proxy` extra.
 
-La forma corretta e:
+The correct form is:
 
 ```text
 litellm[proxy]==1.83.11
 ```
 
-Non basta usare il pacchetto base `litellm`.
+Using the base `litellm` package alone is not enough.
 
-### 10.4 Errore iniziale: richiesta inoltrata a `v1/responses`
+### 10.4 Initial error: request forwarded to `v1/responses`
 
-Nel setup oggetto di questa documentazione, `LiteLLM` ha inizialmente provato a inoltrare il traffico verso:
+In the setup covered by this documentation, `LiteLLM` initially tried to forward traffic to:
 
 ```text
 https://opencode.ai/zen/go/v1/responses
 ```
 
-Questo ha prodotto un `404`, perche il provider testato per `Kimi K2.6` doveva essere raggiunto tramite:
+This produced a `404` because the provider tested for `Kimi K2.6` had to be reached via:
 
 ```text
 https://opencode.ai/zen/go/v1/chat/completions
 ```
 
-La correzione applicata e stata:
+The applied fix was:
 
 ```yaml
 litellm_settings:
   use_chat_completions_url_for_anthropic_messages: true
 ```
 
-### 10.5 Il test funziona, ma Claude Code non risponde come previsto
+### 10.5 The test works, but Claude Code does not respond as expected
 
-Se il test diretto del proxy ha successo ma `Claude Code` continua a non usare il gateway, conviene verificare:
+If the direct proxy test succeeds but `Claude Code` still does not use the gateway, it is worth verifying:
 
-1. che `settings.json` sia quello effettivamente letto dal client;
-2. che sia stata aperta una nuova sessione del client dopo la modifica;
-3. che `ANTHROPIC_BASE_URL` punti ancora a `127.0.0.1:4000`;
-4. che il proxy sia realmente in esecuzione.
+1. that `settings.json` is the one actually read by the client;
+2. that a new client session was opened after the change;
+3. that `ANTHROPIC_BASE_URL` still points to `127.0.0.1:4000`;
+4. that the proxy is actually running.
 
-### 10.6 Errore: `Invalid model name passed in model=claude-haiku-4-5-20251001`
+### 10.6 Error: `Invalid model name passed in model=claude-haiku-4-5-20251001`
 
-Questo errore indica che il proxy ha ricevuto da `Claude Code` un nome modello Anthropic nativo, ma quel nome non era presente negli alias esposti dal `model_list` di `LiteLLM`.
+This error means that the proxy received a native Anthropic model name from `Claude Code`, but that name was not present among the aliases exposed by LiteLLM's `model_list`.
 
-Correzione consigliata:
+Recommended fix:
 
-1. aggiungere nel `config.yaml` un alias con lo stesso `model_name` ricevuto nel log;
-2. farlo puntare allo stesso upstream reale usato per `kimi-k2.6`;
-3. riavviare il proxy.
+1. add an alias to `config.yaml` with the same `model_name` received in the log;
+2. point it to the same real upstream used for `kimi-k2.6`;
+3. restart the proxy.
 
-Esempio:
+Example:
 
 ```yaml
 - model_name: claude-haiku-4-5-20251001
@@ -654,104 +791,104 @@ Esempio:
     api_key: os.environ/OPENCODE_GO_API_KEY
 ```
 
-### 10.7 Errore: `thinking is enabled but reasoning_content is missing in assistant tool call message`
+### 10.7 Error: `thinking is enabled but reasoning_content is missing in assistant tool call message`
 
-Questo errore indica che una conversazione con tool-use e blocchi di reasoning e stata convertita in una forma che il provider upstream non accetta per quel turno specifico.
+This error means that a conversation with tool-use and reasoning blocks was converted into a form that the upstream provider does not accept for that specific turn.
 
-Nel setup documentato, il rimedio consigliato e attivare il workaround nativo di `LiteLLM`:
+In the documented setup, the recommended remedy is to enable LiteLLM's native workaround:
 
 ```yaml
 litellm_settings:
   modify_params: true
 ```
 
-Dopo la modifica e necessario riavviare il proxy.
+After the change, the proxy must be restarted.
 
-### 10.8 La porta `4000` e gia occupata
+### 10.8 Port `4000` is already in use
 
-In questo caso si puo:
+In this case you can:
 
-1. liberare la porta in uso;
-2. scegliere una porta diversa;
-3. aggiornare in modo coerente sia `start-litellm.ps1` sia `ANTHROPIC_BASE_URL`.
+1. free the port in use;
+2. choose a different port;
+3. update both `start-litellm.ps1` and `ANTHROPIC_BASE_URL` consistently.
 
-## 11. Aspetti di sicurezza e buone pratiche
+## 11. Security considerations and best practices
 
-Si raccomanda di non salvare la vera API key nei file di progetto o in repository condivisi.
+It is recommended not to save the real API key in project files or shared repositories.
 
-Buone pratiche minime:
+Minimum best practices:
 
-- tenere `OPENCODE_GO_API_KEY` fuori dal repository;
-- non pubblicare screenshot o log che mostrano segreti;
-- usare un token locale del proxy diverso dalla chiave upstream, come nel caso di `local-litellm-key`;
-- limitare l'ascolto del proxy a `127.0.0.1` quando non esiste un'esigenza esplicita di rete locale.
+- keep `OPENCODE_GO_API_KEY` outside the repository;
+- do not publish screenshots or logs that reveal secrets;
+- use a local proxy token different from the upstream key, as in the case of `local-litellm-key`;
+- limit proxy binding to `127.0.0.1` when there is no explicit local-network need.
 
-## 12. Procedura consigliata per spiegare il workaround a colleghi o studenti
+## 12. Recommended procedure for explaining the workaround to colleagues or students
 
-Per un contesto didattico conviene presentare il flusso in quattro fasi:
+For a teaching context, it is best to present the flow in four phases:
 
-### 12.1 Fase 1 - problema iniziale
+### 12.1 Phase 1 - initial problem
 
-Si mostra che `Claude Code` e `OpenCode Go` non parlano nativamente lo stesso protocollo per questo modello.
+Show that `Claude Code` and `OpenCode Go` do not natively speak the same protocol for this model.
 
-### 12.2 Fase 2 - introduzione del gateway
+### 12.2 Phase 2 - introducing the gateway
 
-Si spiega che `LiteLLM` non cambia il modello, ma traduce l'interfaccia di accesso tra il client e il provider remoto.
+Explain that `LiteLLM` does not change the model, but translates the access interface between the client and the remote provider.
 
-### 12.3 Fase 3 - verifica indipendente del bridge
+### 12.3 Phase 3 - independent bridge verification
 
-Si esegue prima `test-litellm.ps1`, cosi da dimostrare che il gateway funziona anche senza aprire il client finale.
+Run `test-litellm.ps1` first, to show that the gateway works even without opening the final client.
 
-### 12.4 Fase 4 - uso reale nel client
+### 12.4 Phase 4 - real use in the client
 
-Solo dopo la verifica del bridge si passa a `Claude Code`, in modo da distinguere chiaramente i problemi di infrastruttura dai problemi del client.
+Only after verifying the bridge do you move to `Claude Code`, so infrastructure issues remain clearly separated from client issues.
 
-## 13. Checklist rapida di installazione
+## 13. Quick installation checklist
 
-1. Installare o verificare `Python`, `uv` e `uvx`.
-2. Creare `~/.claude/settings.json` con il base URL locale del gateway.
-3. Creare `~/.claude/litellm/config.yaml` con il mapping del modello.
-4. Salvare `OPENCODE_GO_API_KEY` nell'ambiente utente.
-5. Avviare `LiteLLM` con `litellm[proxy]==1.83.11`.
-6. Testare `http://127.0.0.1:4000/v1/messages`.
-7. Aprire una nuova sessione di `Claude Code`.
+1. Install or verify `Python`, `uv`, and `uvx`.
+2. Create `~/.claude/settings.json` with the gateway's local base URL.
+3. Create `~/.claude/litellm/config.yaml` with the model mapping.
+4. Save `OPENCODE_GO_API_KEY` in the user environment.
+5. Start `LiteLLM` with `litellm[proxy]==1.83.11`.
+6. Test `http://127.0.0.1:4000/v1/messages`.
+7. Open a new `Claude Code` session.
 
-## 14. Esito del setup documentato
+## 14. Outcome of the documented setup
 
-Nel setup oggetto di questa documentazione, la verifica finale positiva e stata il seguente comportamento:
+In the setup covered by this documentation, the final positive verification was the following behavior:
 
-- il test locale del proxy ha restituito un payload Anthropic-style valido;
-- il modello riportato nella risposta era `kimi-k2.6`;
-- il contenuto finale atteso `ok` e stato restituito correttamente.
+- the local proxy test returned a valid Anthropic-style payload;
+- the model reported in the response was `kimi-k2.6`;
+- the expected final content `ok` was returned correctly.
 
-Questo costituisce evidenza pratica che il workaround e operativo.
+This provides practical evidence that the workaround is operational.
 
-## 15. Conclusione
+## 15. Conclusion
 
-Il collegamento tra `Claude Code` e `Kimi K2.6` tramite `OpenCode Go` non e un'integrazione diretta, ma un adattamento controllato di protocollo tramite `LiteLLM`.
+The link between `Claude Code` and `Kimi K2.6` through `OpenCode Go` is not a direct integration, but a controlled protocol adaptation via `LiteLLM`.
 
-Il punto critico non e soltanto l'autenticazione, ma la compatibilita del percorso API usato dal gateway. Per questo motivo la configurazione del proxy, la gestione delle variabili d'ambiente e il test indipendente del bridge devono essere considerati parti essenziali del setup, non dettagli secondari.
+The critical point is not only authentication, but also compatibility of the API path used by the gateway. For this reason, proxy configuration, environment variable management, and independent bridge testing must be considered essential parts of the setup, not secondary details.
 
-Se la procedura viene seguita in modo coerente, il workaround risulta ripetibile sia su Windows sia su Linux.
+If the procedure is followed consistently, the workaround is repeatable on both Windows and Linux.
 
-## 16. Distribuzione stabile del workaround
+## 16. Stable distribution of the workaround
 
-La procedura descritta in questo tutorial usa una soluzione validata localmente e puo essere sufficiente per una singola macchina.
+The procedure described in this tutorial uses a locally validated solution and may be sufficient for a single machine.
 
-Se il workaround deve essere condiviso con colleghi o studenti, la soluzione consigliata non e modificare la cache di `uvx` su ogni computer, ma mantenere una fork GitHub di `LiteLLM` con una tag esplicita contenente il fix.
+If the workaround must be shared with colleagues or students, the recommended solution is not to modify the `uvx` cache on every computer, but to maintain a GitHub fork of `LiteLLM` with an explicit tag containing the fix.
 
-Il repository include gia:
+The repository already includes:
 
-- una patch riapplicabile in `assets/litellm-fork/patches/`;
-- script di installazione Windows e Linux in `assets/litellm-fork/`;
-- una guida dedicata in `docs/litellm-fork-distribution.md`.
+- a reappliable patch in `patches/`;
+- Windows and Linux installation scripts in `scripts/`;
+- a dedicated guide in `docs/litellm-fork-distribution.md`.
 
-La patch sul codice di `LiteLLM` non va intesa come una patch solo per `Kimi K2.6`: il fix puo essere trattato come una correzione generale del bridge Anthropic -> OpenAI-compatible sui turni con `thinking` e `tool_calls`.
+The patch to the `LiteLLM` code should not be understood as a patch only for `Kimi K2.6`: the fix can be treated as a general correction to the Anthropic -> OpenAI-compatible bridge on turns that include `thinking` and `tool_calls`.
 
-Per supportare piu modelli di `OpenCode Go`, il passaggio corretto e distinguere nel `config.yaml` le famiglie di endpoint, non duplicare una patch per ogni modello.
+To support multiple `OpenCode Go` models, the correct step is to distinguish endpoint families in `config.yaml`, not to duplicate a patch for each model.
 
-Questa strategia rende il workaround:
+This strategy makes the workaround:
 
-- ripetibile;
-- verificabile;
-- piu adatto a contesti didattici o di team.
+- repeatable;
+- verifiable;
+- better suited to teaching or team contexts.
