@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://127.0.0.1:4000",
+    "ANTHROPIC_AUTH_TOKEN": "local-litellm-key",
+    "ANTHROPIC_CUSTOM_MODEL_OPTION": "claude-opus-4-1-20250805",
+    "ANTHROPIC_CUSTOM_MODEL_OPTION_NAME": "Claude Opus 4.1 alias via Gateway",
+    "ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION": "Claude Opus 4.1 alias routed through the local LiteLLM gateway",
+    "ANTHROPIC_MODEL": "claude-opus-4-1-20250805",
+    "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": "1"
+  },
+  "permissions": {
+    "deny": [
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(secrets/**)",
+      "Read(**/secrets/**)",
+      "Edit(.env)",
+      "Edit(.env.*)",
+      "Write(.env)",
+      "Write(.env.*)"
+    ]
+  },
+  "enabledPlugins": {},
+  "effortLevel": "xhigh",
+  "autoUpdatesChannel": "latest"
+}

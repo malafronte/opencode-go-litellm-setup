@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://127.0.0.1:4000",
+    "ANTHROPIC_AUTH_TOKEN": "local-litellm-key",
+    "ANTHROPIC_CUSTOM_MODEL_OPTION": "kimi-k2.6",
+    "ANTHROPIC_CUSTOM_MODEL_OPTION_NAME": "Kimi K2.6 via Gateway",
+    "ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION": "Kimi K2.6 routed through a local LiteLLM gateway",
+    "ANTHROPIC_MODEL": "kimi-k2.6",
+    "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": "1"
+  },
+  "permissions": {
+    "deny": [
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(secrets/**)",
+      "Read(**/secrets/**)",
+      "Edit(.env)",
+      "Edit(.env.*)",
+      "Write(.env)",
+      "Write(.env.*)"
+    ]
+  },
+  "enabledPlugins": {},
+  "effortLevel": "xhigh",
+  "autoUpdatesChannel": "latest"
+}

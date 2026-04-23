@@ -1,0 +1,153 @@
+--- a/litellm/llms/anthropic/experimental_pass_through/adapters/transformation.py
++++ b/litellm/llms/anthropic/experimental_pass_through/adapters/transformation.py
+@@ -555,6 +555,7 @@
+            )  # For content blocks with cache_control
+            has_cache_control_in_text = False
+            tool_calls: List[ChatCompletionAssistantToolCall] = []
++            reasoning_content_parts: List[str] = []
+            thinking_blocks: List[
+                Union[ChatCompletionThinkingBlock, ChatCompletionRedactedThinkingBlock]
+            ] = []
+@@ -612,12 +613,15 @@
+                                )
+                                tool_calls.append(tool_call)
+                            elif content.get("type") == "thinking":
++                                thinking_text = content.get("thinking") or ""
+                                thinking_block = ChatCompletionThinkingBlock(
+                                    type="thinking",
+-                                    thinking=content.get("thinking") or "",
++                                    thinking=thinking_text,
+                                    signature=content.get("signature") or "",
+                                    cache_control=content.get("cache_control", {}),
+                                )
++                                if thinking_text:
++                                    reasoning_content_parts.append(thinking_text)
+                                thinking_blocks.append(thinking_block)
+                            elif content.get("type") == "redacted_thinking":
+                                redacted_thinking_block = (
+@@ -655,6 +659,9 @@
+                )
+                if len(tool_calls) > 0:
+                    assistant_message["tool_calls"] = tool_calls  # type: ignore
++                    assistant_message["reasoning_content"] = (
++                        "".join(reasoning_content_parts) if len(reasoning_content_parts) > 0 else " "
++                    )  # type: ignore
+                if len(thinking_blocks) > 0:
+                    assistant_message["thinking_blocks"] = thinking_blocks  # type: ignore
+                new_messages.append(assistant_message)
+@@ -1249,10 +1249,14 @@ class LiteLLMAnthropicMessagesAdapter:
+                )
+
+            # Handle text content
+-            if choice.message.content is not None:
++            text_content = choice.message.content
++            if isinstance(text_content, str) and "</think>" in text_content:
++                text_content = text_content.split("</think>", 1)[1].lstrip()
++
++            if text_content:
+                new_content.append(
+                    AnthropicResponseContentBlockText(
+-                        type="text", text=choice.message.content
++                        type="text", text=text_content
+                    ).model_dump()
+                )
+            # Handle tool calls (in parallel to text content)
+
+diff --git a/litellm/llms/anthropic/chat/transformation.py b/litellm/llms/anthropic/chat/transformation.py
+index cd5bb73171..64bcd0b4e6 100644
+--- a/litellm/llms/anthropic/chat/transformation.py
++++ b/litellm/llms/anthropic/chat/transformation.py
+@@ -1663,6 +1663,9 @@ class AnthropicConfig(AnthropicModelInfo, BaseConfig):
+                if thinking_content is not None:
+                    reasoning_content += thinking_content
+
++        if "</think>" in text_content:
++            text_content = text_content.split("</think>", 1)[1].lstrip()
++
+         return (
+             text_content,
+             citations,
+
+diff --git a/litellm/llms/anthropic/experimental_pass_through/messages/handler.py b/litellm/llms/anthropic/experimental_pass_through/messages/handler.py
+--- a/litellm/llms/anthropic/experimental_pass_through/messages/handler.py
++++ b/litellm/llms/anthropic/experimental_pass_through/messages/handler.py
+@@ -31,6 +31,35 @@
+ _RESPONSES_API_PROVIDERS = frozenset({"openai"})
+ 
+ 
+ def _should_route_to_responses_api(custom_llm_provider: Optional[str]) -> bool:
+@@
+     if litellm.use_chat_completions_url_for_anthropic_messages:
+         return False
+     return custom_llm_provider in _RESPONSES_API_PROVIDERS
+
+
+def _sanitize_think_tag_text_blocks(
+    response: Union[AnthropicMessagesResponse, AsyncIterator]
+) -> Union[AnthropicMessagesResponse, AsyncIterator]:
+    if not isinstance(response, dict):
+        return response
+
+    content = response.get("content")
+    if not isinstance(content, list):
+        return response
+
+    sanitized_content: List[Dict[str, Any]] = []
+    for block in content:
+        if not isinstance(block, dict):
+            sanitized_content.append(block)
+            continue
+
+        if block.get("type") != "text":
+            sanitized_content.append(block)
+            continue
+
+        text = block.get("text")
+        if not isinstance(text, str) or "</think>" not in text:
+            sanitized_content.append(block)
+            continue
+@@ -311,11 +340,12 @@ async def anthropic_messages(
+     if asyncio.iscoroutine(init_response):
+         response = await init_response
+     else:
+         response = init_response
+-    return response
++    return _sanitize_think_tag_text_blocks(response)
+@@ -455,16 +485,20 @@ def anthropic_messages_handler(
+             **kwargs,
+         )
+         if _should_route_to_responses_api(custom_llm_provider):
+-            return LiteLLMMessagesToResponsesAPIHandler.anthropic_messages_handler(
+-                **_shared_kwargs
+-            )
+-        return (
+-            LiteLLMMessagesToCompletionTransformationHandler.anthropic_messages_handler(
+-                **_shared_kwargs
+-            )
++            return _sanitize_think_tag_text_blocks(
++                LiteLLMMessagesToResponsesAPIHandler.anthropic_messages_handler(
++                    **_shared_kwargs
++                )
++            )
++        return _sanitize_think_tag_text_blocks(
++            LiteLLMMessagesToCompletionTransformationHandler.anthropic_messages_handler(
++                **_shared_kwargs
++            )
+         )
+@@ -477,7 +511,7 @@ def anthropic_messages_handler(
+     anthropic_messages_optional_request_params = (
+         AnthropicMessagesRequestUtils.get_requested_anthropic_messages_optional_param(
+             params=local_vars
+         )
+     )
+-    return base_llm_http_handler.anthropic_messages_handler(
++    return _sanitize_think_tag_text_blocks(base_llm_http_handler.anthropic_messages_handler(
+         model=model,
+         messages=messages,
+         anthropic_messages_provider_config=anthropic_messages_provider_config,
+@@ -493,4 +527,4 @@ def anthropic_messages_handler(
+         api_base=api_base,
+         stream=stream,
+         kwargs=kwargs,
+-    )
++    ))
