@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO="${1:-<github-user>/litellm}"
-REF="${2:-v1.83.11-nightly-opencode-go1}"
+REF="${2:-v1.83.11-nightly-opencode-go-pr26285}"
 RUNTIME_DIR="${3:-$HOME/.claude/litellm-runtime}"
 FORCE_REINSTALL="${FORCE_REINSTALL:-0}"
 

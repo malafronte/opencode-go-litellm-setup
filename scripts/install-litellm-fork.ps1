@@ -1,6 +1,6 @@
 param(
     [string]$Repo = "<github-user>/litellm",
-    [string]$Ref = "v1.83.11-nightly-opencode-go1",
+    [string]$Ref = "v1.83.11-nightly-opencode-go-pr26285",
     [string]$RuntimeDir = "$HOME\.claude\litellm-runtime",
     [string]$SourceDir = "",
     [switch]$ForceReinstall

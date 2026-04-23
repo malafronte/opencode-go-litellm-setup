@@ -36,17 +36,24 @@ Use Anthropic-style clients with OpenCode Go models through a local LiteLLM gate
 ### Windows
 
 ```powershell
-pwsh -File .\scripts\install-litellm-fork.ps1 -Repo "malafronte/litellm" -Ref "v1.83.11-nightly-opencode-go1"
+pwsh -File .\scripts\install-litellm-fork.ps1 -Repo "malafronte/litellm" -Ref "v1.83.11-nightly-opencode-go-pr26285"
 New-Item -ItemType Directory -Force -Path "$HOME\.claude\litellm" | Out-Null
 Copy-Item .\config\opencode-go-config.template.yaml "$HOME\.claude\litellm\config.yaml" -Force
+
+# Fastest temporary option for the current terminal:
 $env:OPENCODE_GO_API_KEY = "<YOUR_OPENCODE_GO_API_KEY>"
+
+# Optional persistent Windows alternative if you already use the helper scripts in $HOME\.claude\litellm:
+# pwsh -File "$HOME\.claude\litellm\set-opencode-go-key.ps1" -ApiKey "<YOUR_OPENCODE_GO_API_KEY>"
+# Then open a new terminal before starting the gateway.
+
 pwsh -File .\scripts\start-litellm-fork.ps1 -ConfigPath "$HOME\.claude\litellm\config.yaml"
 ```
 
 ### Linux/macOS
 
 ```bash
-./scripts/install-litellm-fork.sh "malafronte/litellm" "v1.83.11-nightly-opencode-go1"
+./scripts/install-litellm-fork.sh "malafronte/litellm" "v1.83.11-nightly-opencode-go-pr26285"
 mkdir -p "$HOME/.claude/litellm"
 cp ./config/opencode-go-config.template.yaml "$HOME/.claude/litellm/config.yaml"
 export OPENCODE_GO_API_KEY="<YOUR_OPENCODE_GO_API_KEY>"

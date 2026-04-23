@@ -34,7 +34,7 @@ This repository is designed to install LiteLLM from the fork at:
 
 The [helper scripts](../scripts/) are already prepared for the validated ref:
 
-- `v1.83.11-nightly-opencode-go1`
+- `v1.83.11-nightly-opencode-go-pr26285`
 
 If you use the provided install scripts, pass the fork explicitly so there is no ambiguity.
 
@@ -43,7 +43,7 @@ If you use the provided install scripts, pass the fork explicitly so there is no
 1. Install the patched LiteLLM runtime from the fork:
 
 ```powershell
-pwsh -File .\scripts\install-litellm-fork.ps1 -Repo "malafronte/litellm" -Ref "v1.83.11-nightly-opencode-go1"
+pwsh -File .\scripts\install-litellm-fork.ps1 -Repo "malafronte/litellm" -Ref "v1.83.11-nightly-opencode-go-pr26285"
 ```
 
 2. Create your LiteLLM config from the repository template:
@@ -53,11 +53,21 @@ New-Item -ItemType Directory -Force -Path "$HOME\.claude\litellm" | Out-Null
 Copy-Item .\config\opencode-go-config.template.yaml "$HOME\.claude\litellm\config.yaml" -Force
 ```
 
-3. Export your OpenCode Go API key in the current terminal:
+3. Provide your OpenCode Go API key.
+
+Fastest temporary option for the current terminal:
 
 ```powershell
 $env:OPENCODE_GO_API_KEY = "<YOUR_OPENCODE_GO_API_KEY>"
 ```
+
+If you already use the Windows helper scripts under `$HOME\.claude\litellm`, you can also persist it in the user environment with:
+
+```powershell
+pwsh -File "$HOME\.claude\litellm\set-opencode-go-key.ps1" -ApiKey "<YOUR_OPENCODE_GO_API_KEY>"
+```
+
+If you use the persistent option, open a new terminal before starting the gateway so the new session inherits the saved variable.
 
 4. Start the gateway:
 
@@ -88,7 +98,7 @@ At that point, the fastest next read is:
 1. Install the patched LiteLLM runtime from the fork:
 
 ```bash
-./scripts/install-litellm-fork.sh "malafronte/litellm" "v1.83.11-nightly-opencode-go1"
+./scripts/install-litellm-fork.sh "malafronte/litellm" "v1.83.11-nightly-opencode-go-pr26285"
 ```
 
 2. Create your LiteLLM config from the repository template:
@@ -115,7 +125,7 @@ export OPENCODE_GO_API_KEY="<YOUR_OPENCODE_GO_API_KEY>"
 ### What is happening in those 2 minutes
 
 - the install script creates a dedicated local LiteLLM runtime;
-- the runtime is installed from `malafronte/litellm` at ref `v1.83.11-nightly-opencode-go1`;
+- the runtime is installed from `malafronte/litellm` at ref `v1.83.11-nightly-opencode-go-pr26285`;
 - the config template exposes ready-to-edit model aliases;
 - the startup script launches the gateway on `http://127.0.0.1:4000`;
 - your client only needs to target that local proxy.
