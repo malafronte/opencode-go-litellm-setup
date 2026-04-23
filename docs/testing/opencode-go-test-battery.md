@@ -105,7 +105,7 @@ For OpenCode Go, it is useful to distinguish two upstream families.
 
 ### 4.1 Family A — upstream `chat/completions`
 
-Esempi attuali:
+Current examples:
 
 - `kimi-k2.5`
 - `kimi-k2.6`
@@ -122,7 +122,7 @@ This family is the most important one for validating the Anthropic-to-OpenAI-com
 
 ### 4.2 Family B — upstream `messages`
 
-Esempi attuali:
+Current examples:
 
 - `minimax-m2.5`
 - `minimax-m2.7`
@@ -143,103 +143,103 @@ The script runs two main checks:
 To reduce false negatives observed with some OpenCode Go aliases, the `smoke` check includes a minimal retry when the model returns empty text.
 For `minimax-m2.5`, the `tool-loop` applies a specific fallback: if the first turn stops with `stop_reason = max_tokens` and returns the textual marker `<minimax:tool_call>`, the battery retries that first turn with `max_tokens = 768` to obtain a structured `tool_use` block.
 
-## 6. Comandi consigliati
+## 6. Recommended commands
 
-### 6.0 Comandi pronti per il config reale attuale
+### 6.0 Commands for the current local configuration
 
-Al momento il `config.yaml` reale espone questi alias:
+At the moment, the active local `config.yaml` exposes these aliases:
 
 - `kimi-k2.6`
 - `claude-haiku-4-5-20251001`
 - `claude-sonnet-4-5-20250929`
 - `claude-opus-4-1-20250805`
 
-Nel setup corrente tutti e quattro gli alias puntano allo stesso upstream `openai/kimi-k2.6`.
-Questo significa che la batteria, nello stato attuale, verifica soprattutto:
+In the current setup, all four aliases point to the same upstream target: `openai/kimi-k2.6`.
+This means the battery currently validates mostly:
 
-- corretto riconoscimento degli alias da parte del proxy;
-- assenza di `ProxyModelNotFoundError` con i nomi Anthropic-style usati da `Claude Code`;
-- stabilita del bridge multi-turn sul modello `kimi-k2.6` esposto con alias diversi.
+- correct alias resolution by the proxy;
+- absence of `ProxyModelNotFoundError` for Anthropic-style alias names used by the client;
+- stability of the multi-turn bridge when the same upstream model is exposed through different aliases.
 
-Smoke test su tutti gli alias reali, Windows:
+Smoke test on all currently configured aliases, Windows:
 
 ```powershell
-py .\assets\litellm-fork\tests\run-opencode-go-battery.py --mode smoke --models kimi-k2.6 claude-haiku-4-5-20251001 claude-sonnet-4-5-20250929 claude-opus-4-1-20250805
+py .\tests\proxy-battery\run-opencode-go-battery.py --mode smoke --models kimi-k2.6 claude-haiku-4-5-20251001 claude-sonnet-4-5-20250929 claude-opus-4-1-20250805
 ```
 
-Smoke test su tutti gli alias reali, Linux:
+Smoke test on all currently configured aliases, Linux:
 
 ```bash
-python3 ./assets/litellm-fork/tests/run-opencode-go-battery.py --mode smoke --models kimi-k2.6 claude-haiku-4-5-20251001 claude-sonnet-4-5-20250929 claude-opus-4-1-20250805
+python3 ./tests/proxy-battery/run-opencode-go-battery.py --mode smoke --models kimi-k2.6 claude-haiku-4-5-20251001 claude-sonnet-4-5-20250929 claude-opus-4-1-20250805
 ```
 
-Tool-loop su tutti gli alias reali, Windows:
+Tool-loop on all currently configured aliases, Windows:
 
 ```powershell
-py .\assets\litellm-fork\tests\run-opencode-go-battery.py --mode tool-loop --models kimi-k2.6 claude-haiku-4-5-20251001 claude-sonnet-4-5-20250929 claude-opus-4-1-20250805
+py .\tests\proxy-battery\run-opencode-go-battery.py --mode tool-loop --models kimi-k2.6 claude-haiku-4-5-20251001 claude-sonnet-4-5-20250929 claude-opus-4-1-20250805
 ```
 
-Tool-loop su tutti gli alias reali, Linux:
+Tool-loop on all currently configured aliases, Linux:
 
 ```bash
-python3 ./assets/litellm-fork/tests/run-opencode-go-battery.py --mode tool-loop --models kimi-k2.6 claude-haiku-4-5-20251001 claude-sonnet-4-5-20250929 claude-opus-4-1-20250805
+python3 ./tests/proxy-battery/run-opencode-go-battery.py --mode tool-loop --models kimi-k2.6 claude-haiku-4-5-20251001 claude-sonnet-4-5-20250929 claude-opus-4-1-20250805
 ```
 
-Batteria completa su tutti gli alias reali, Windows:
+Full battery on all currently configured aliases, Windows:
 
 ```powershell
-py .\assets\litellm-fork\tests\run-opencode-go-battery.py --mode all --models kimi-k2.6 claude-haiku-4-5-20251001 claude-sonnet-4-5-20250929 claude-opus-4-1-20250805
+py .\tests\proxy-battery\run-opencode-go-battery.py --mode all --models kimi-k2.6 claude-haiku-4-5-20251001 claude-sonnet-4-5-20250929 claude-opus-4-1-20250805
 ```
 
-Finche il `config.yaml` reale non viene esteso con alias aggiuntivi verso altri upstream, `GO-04` resta non applicabile perche non c'e ancora un alias della famiglia `messages`.
+Until the active `config.yaml` is extended with additional aliases targeting other upstream models, `GO-04` remains not applicable because there is still no alias mapped to the `messages` family.
 
-### 6.1 Smoke test su una lista di modelli
+### 6.1 Smoke test on a mixed model list
 
 Windows:
 
 ```powershell
-py .\assets\litellm-fork\tests\run-opencode-go-battery.py --mode smoke --models kimi-k2.6 qwen3.5-plus minimax-m2.5
+py .\tests\proxy-battery\run-opencode-go-battery.py --mode smoke --models kimi-k2.6 qwen3.5-plus minimax-m2.5
 ```
 
 Linux:
 
 ```bash
-python3 ./assets/litellm-fork/tests/run-opencode-go-battery.py --mode smoke --models kimi-k2.6 qwen3.5-plus minimax-m2.5
+python3 ./tests/proxy-battery/run-opencode-go-battery.py --mode smoke --models kimi-k2.6 qwen3.5-plus minimax-m2.5
 ```
 
-### 6.2 Tool-loop test sulla famiglia `chat/completions`
+### 6.2 Tool-loop test for the `chat/completions` family
 
 Windows:
 
 ```powershell
-py .\assets\litellm-fork\tests\run-opencode-go-battery.py --mode tool-loop --models kimi-k2.6 glm-5 qwen3.6-plus
+py .\tests\proxy-battery\run-opencode-go-battery.py --mode tool-loop --models kimi-k2.6 glm-5 qwen3.6-plus
 ```
 
 Linux:
 
 ```bash
-python3 ./assets/litellm-fork/tests/run-opencode-go-battery.py --mode tool-loop --models kimi-k2.6 glm-5 qwen3.6-plus
+python3 ./tests/proxy-battery/run-opencode-go-battery.py --mode tool-loop --models kimi-k2.6 glm-5 qwen3.6-plus
 ```
 
-### 6.3 Batteria completa su un set misto
+### 6.3 Full battery on a mixed set
 
 ```powershell
-py .\assets\litellm-fork\tests\run-opencode-go-battery.py --mode all --models kimi-k2.6 qwen3.5-plus minimax-m2.5
+py .\tests\proxy-battery\run-opencode-go-battery.py --mode all --models kimi-k2.6 qwen3.5-plus minimax-m2.5
 ```
 
-### 6.4 Variante specifica per `minimax-m2.5`
+### 6.4 Dedicated variant for `minimax-m2.5`
 
-Quando vuoi isolare il comportamento reale di `minimax-m2.5` sul tool-use, usa questo comando dedicato:
+When you want to isolate the real tool-use behavior of `minimax-m2.5`, use this dedicated command:
 
 ```powershell
-py .\assets\litellm-fork\tests\run-opencode-go-battery.py --mode tool-loop --models minimax-m2.5
+py .\tests\proxy-battery\run-opencode-go-battery.py --mode tool-loop --models minimax-m2.5
 ```
 
-La batteria applica automaticamente la variante specifica del primo turno per questo alias.
+The battery automatically applies the first-turn fallback variant for this alias.
 
-## 7. Risultato atteso dello script
+## 7. Expected script output
 
-Lo script deve produrre righe come queste:
+The script should produce lines such as:
 
 ```text
 [PASS] health http://127.0.0.1:4000
@@ -248,188 +248,188 @@ Lo script deve produrre righe come queste:
 Summary: 2 passed, 0 failed
 ```
 
-Interpretazione minima:
+Minimal interpretation:
 
-- se fallisce `health`, il proxy non e raggiungibile;
-- se fallisce `smoke`, il problema e nel routing di base o nell'autenticazione;
-- se fallisce `tool-loop`, il problema e tipicamente nel bridge multi-turn, nella gestione del tool-use o del reasoning.
+- if `health` fails, the proxy is not reachable;
+- if `smoke` fails, the issue is usually basic routing or authentication;
+- if `tool-loop` fails, the issue is typically in the multi-turn bridge, tool-use handling, or reasoning handling.
 
-## 8. Matrice dei test consigliati
+## 8. Recommended test matrix
 
-| ID | Test | Target | Esecuzione | Esito atteso |
+| ID | Test | Target | Execution | Expected outcome |
 | --- | --- | --- | --- | --- |
-| GO-01 | Health del proxy | Tutti | automatico | `HEAD /` risponde senza errori critici |
-| GO-02 | Smoke test su ogni alias configurato | Tutti | automatico | testo finale `ok` |
-| GO-03 | Tool-loop su modelli `chat/completions` | Famiglia A | automatico | testo finale `tool-loop-ok` |
-| GO-04 | Smoke test su modelli `messages` | Famiglia B | automatico | testo finale `ok` |
-| GO-05 | Claude Code: lettura file e sintesi | 1 modello per famiglia | manuale | nessun errore proxy, nessuna perdita di contesto |
-| GO-06 | Claude Code: file edit su piu turni | almeno 1 modello Famiglia A | manuale | nessun errore su `reasoning_content` |
-| GO-07 | Claude Code: cambio modello alias | set di modelli del tuo abbonamento | manuale | nessun `ProxyModelNotFoundError` |
+| GO-01 | Proxy health | All | automatic | `HEAD /` returns without critical errors |
+| GO-02 | Smoke test for each configured alias | All | automatic | final text is `ok` |
+| GO-03 | Tool-loop on `chat/completions` models | Family A | automatic | final text is `tool-loop-ok` |
+| GO-04 | Smoke test on `messages` models | Family B | automatic | final text is `ok` |
+| GO-05 | Client read-and-summarize flow | 1 model per family | manual | no proxy errors, no context loss |
+| GO-06 | Client file-edit multi-turn flow | at least 1 Family A model | manual | no `reasoning_content` errors |
+| GO-07 | Client alias switching | models available in your plan | manual | no `ProxyModelNotFoundError` |
 
-## 9. Test manuali dentro Claude Code
+## 9. Manual client tests
 
-### 9.0 Checklist manuale allineata ai 4 alias correnti
+### 9.0 Manual checklist aligned with the current four aliases
 
-Alias da verificare:
+Aliases to verify:
 
 - `kimi-k2.6`
 - `claude-haiku-4-5-20251001`
 - `claude-sonnet-4-5-20250929`
 - `claude-opus-4-1-20250805`
 
-Per ogni alias:
+For each alias:
 
-1. Impostare in `~/.claude/settings.json` sia `ANTHROPIC_MODEL` sia `ANTHROPIC_CUSTOM_MODEL_OPTION` con lo stesso alias.
-2. Riavviare la sessione di `Claude Code` o aprire una nuova sessione pulita.
-3. Eseguire il prompt GO-05 di sola lettura.
-4. Eseguire in sequenza i 3 prompt GO-06 di creazione, modifica e cancellazione file.
-5. Registrare per l'alias: esito `PASS` o `FAIL`, eventuale `ProxyModelNotFoundError`, eventuale errore `reasoning_content missing`, e tempo percepito di risposta.
+1. Set both `ANTHROPIC_MODEL` and `ANTHROPIC_CUSTOM_MODEL_OPTION` to the same alias in the client settings file.
+2. Restart the client session or open a new clean session.
+3. Run the GO-05 read-only prompt.
+4. Run the three GO-06 prompts in sequence for file creation, update, and deletion.
+5. Record for each alias: `PASS` or `FAIL`, any `ProxyModelNotFoundError`, any `reasoning_content missing` error, and perceived response time.
 
-Checklist sintetica:
+Compact checklist:
 
-- `kimi-k2.6`: GO-05 [ ], GO-06 [ ], `ProxyModelNotFoundError` [ ], `reasoning_content missing` [ ], note [ ]
-- `claude-haiku-4-5-20251001`: GO-05 [ ], GO-06 [ ], `ProxyModelNotFoundError` [ ], `reasoning_content missing` [ ], note [ ]
-- `claude-sonnet-4-5-20250929`: GO-05 [ ], GO-06 [ ], `ProxyModelNotFoundError` [ ], `reasoning_content missing` [ ], note [ ]
-- `claude-opus-4-1-20250805`: GO-05 [ ], GO-06 [ ], `ProxyModelNotFoundError` [ ], `reasoning_content missing` [ ], note [ ]
+- `kimi-k2.6`: GO-05 [ ], GO-06 [ ], `ProxyModelNotFoundError` [ ], `reasoning_content missing` [ ], notes [ ]
+- `claude-haiku-4-5-20251001`: GO-05 [ ], GO-06 [ ], `ProxyModelNotFoundError` [ ], `reasoning_content missing` [ ], notes [ ]
+- `claude-sonnet-4-5-20250929`: GO-05 [ ], GO-06 [ ], `ProxyModelNotFoundError` [ ], `reasoning_content missing` [ ], notes [ ]
+- `claude-opus-4-1-20250805`: GO-05 [ ], GO-06 [ ], `ProxyModelNotFoundError` [ ], `reasoning_content missing` [ ], notes [ ]
 
-### 9.1 Sequenza pronta di 4 test manuali Claude Code
+### 9.1 Ready-made sequence of four manual client tests
 
-Test 1 - alias `kimi-k2.6`
+Test 1 — alias `kimi-k2.6`
 
-Impostazioni da usare in `~/.claude/settings.json`:
+Settings to use in the client configuration:
 
 - `ANTHROPIC_MODEL = kimi-k2.6`
 - `ANTHROPIC_CUSTOM_MODEL_OPTION = kimi-k2.6`
 
-Prompt da eseguire in ordine:
+Prompts to run in order:
 
 ```text
-Leggi docs/spec.md e riassumi in 5 punti gli obiettivi del progetto. Non modificare alcun file.
+Read `docs/spec.md` and summarize the project objectives in 5 bullet points. Do not modify any file.
 ```
 
 ```text
-Crea un file temporaneo docs/_proxy_battery_test_kimi.md con titolo, data di oggi e una breve nota di test.
+Create a temporary file `docs/_proxy_battery_test_kimi.md` with a title, today's date, and a short test note.
 ```
 
 ```text
-Riapri il file docs/_proxy_battery_test_kimi.md e aggiungi una riga finale con scritto: test multi-turn completato.
+Reopen `docs/_proxy_battery_test_kimi.md` and append a final line that says: `multi-turn test completed`.
 ```
 
 ```text
-Elimina il file temporaneo docs/_proxy_battery_test_kimi.md.
+Delete the temporary file `docs/_proxy_battery_test_kimi.md`.
 ```
 
-Test 2 - alias `claude-haiku-4-5-20251001`
+Test 2 — alias `claude-haiku-4-5-20251001`
 
-Impostazioni da usare in `~/.claude/settings.json`:
+Settings to use in the client configuration:
 
 - `ANTHROPIC_MODEL = claude-haiku-4-5-20251001`
 - `ANTHROPIC_CUSTOM_MODEL_OPTION = claude-haiku-4-5-20251001`
 
-Prompt da eseguire in ordine:
+Prompts to run in order:
 
 ```text
-Leggi docs/plan.md e dimmi in 4 punti quale iterazione viene prima e quale dopo. Non modificare file.
+Read `docs/plan.md` and explain in 4 bullet points which iteration comes first and which comes after. Do not modify files.
 ```
 
 ```text
-Crea un file temporaneo docs/_proxy_battery_test_haiku.md con una checklist di tre righe.
+Create a temporary file `docs/_proxy_battery_test_haiku.md` with a three-line checklist.
 ```
 
 ```text
-Aggiorna docs/_proxy_battery_test_haiku.md marcando la prima voce come completata.
+Update `docs/_proxy_battery_test_haiku.md` by marking the first checklist item as completed.
 ```
 
 ```text
-Elimina il file temporaneo docs/_proxy_battery_test_haiku.md.
+Delete the temporary file `docs/_proxy_battery_test_haiku.md`.
 ```
 
-Test 3 - alias `claude-sonnet-4-5-20250929`
+Test 3 — alias `claude-sonnet-4-5-20250929`
 
-Impostazioni da usare in `~/.claude/settings.json`:
+Settings to use in the client configuration:
 
 - `ANTHROPIC_MODEL = claude-sonnet-4-5-20250929`
 - `ANTHROPIC_CUSTOM_MODEL_OPTION = claude-sonnet-4-5-20250929`
 
-Prompt da eseguire in ordine:
+Prompts to run in order:
 
 ```text
-Leggi docs/test-matrix.md e riassumi i gruppi di test in 5 punti. Non modificare file.
+Read `docs/test-matrix.md` and summarize the test groups in 5 bullet points. Do not modify files.
 ```
 
 ```text
-Crea un file temporaneo docs/_proxy_battery_test_sonnet.md con una tabella markdown di due colonne e due righe.
+Create a temporary file `docs/_proxy_battery_test_sonnet.md` with a two-column, two-row Markdown table.
 ```
 
 ```text
-Aggiungi in fondo a docs/_proxy_battery_test_sonnet.md una nota finale con scritto: verifica sonnet completata.
+Append a final note to `docs/_proxy_battery_test_sonnet.md` that says: `sonnet verification completed`.
 ```
 
 ```text
-Elimina il file temporaneo docs/_proxy_battery_test_sonnet.md.
+Delete the temporary file `docs/_proxy_battery_test_sonnet.md`.
 ```
 
-Test 4 - alias `claude-opus-4-1-20250805`
+Test 4 — alias `claude-opus-4-1-20250805`
 
-Impostazioni da usare in `~/.claude/settings.json`:
+Settings to use in the client configuration:
 
 - `ANTHROPIC_MODEL = claude-opus-4-1-20250805`
 - `ANTHROPIC_CUSTOM_MODEL_OPTION = claude-opus-4-1-20250805`
 
-Prompt da eseguire in ordine:
+Prompts to run in order:
 
 ```text
-Leggi README.md e descrivi in 5 punti il contenuto del repository. Non modificare file.
+Read `README.md` and describe the repository contents in 5 bullet points. Do not modify files.
 ```
 
 ```text
-Crea un file temporaneo docs/_proxy_battery_test_opus.md con titolo, breve descrizione e un elenco puntato di due elementi.
+Create a temporary file `docs/_proxy_battery_test_opus.md` with a title, a short description, and a two-item bullet list.
 ```
 
 ```text
-Aggiorna docs/_proxy_battery_test_opus.md aggiungendo una sezione finale chiamata Esito con valore PASS.
+Update `docs/_proxy_battery_test_opus.md` by adding a final section named `Outcome` with value `PASS`.
 ```
 
 ```text
-Elimina il file temporaneo docs/_proxy_battery_test_opus.md.
+Delete the temporary file `docs/_proxy_battery_test_opus.md`.
 ```
 
-### 9.2 Blocchi `settings.json` pronti da incollare
+### 9.2 Ready-to-use settings blocks
 
-Per scambiare piu facilmente i preset durante i test manuali, il repository include anche questi 4 file separati:
+To swap presets more easily during manual tests, the repository also includes these four separate files:
 
-- `assets/litellm-fork/settings-presets/settings-kimi-k2.6.json`
-- `assets/litellm-fork/settings-presets/settings-claude-haiku-4-5-20251001.json`
-- `assets/litellm-fork/settings-presets/settings-claude-sonnet-4-5-20250929.json`
-- `assets/litellm-fork/settings-presets/settings-claude-opus-4-1-20250805.json`
+- `examples/anthropic-client-presets/settings-kimi-k2.6.json`
+- `examples/anthropic-client-presets/settings-claude-haiku-4-5-20251001.json`
+- `examples/anthropic-client-presets/settings-claude-sonnet-4-5-20250929.json`
+- `examples/anthropic-client-presets/settings-claude-opus-4-1-20250805.json`
 
-### 9.3 Comandi PowerShell rapidi per sostituire `settings.json`
+### 9.3 Quick PowerShell commands to replace `settings.json`
 
-Eseguire questi comandi dalla root del repository per sostituire rapidamente `C:\Users\genna\.claude\settings.json` durante i test manuali.
-Dopo ogni sostituzione conviene aprire una nuova sessione di `Claude Code`.
+Run these commands from the repository root to quickly replace `C:\Users\genna\.claude\settings.json` during manual tests.
+After each replacement, it is recommended to open a new clean client session.
 
 Preset `kimi-k2.6`:
 
 ```powershell
-Copy-Item .\assets\litellm-fork\settings-presets\settings-kimi-k2.6.json "$HOME\.claude\settings.json" -Force
+Copy-Item .\examples\anthropic-client-presets\settings-kimi-k2.6.json "$HOME\.claude\settings.json" -Force
 ```
 
 Preset `claude-haiku-4-5-20251001`:
 
 ```powershell
-Copy-Item .\assets\litellm-fork\settings-presets\settings-claude-haiku-4-5-20251001.json "$HOME\.claude\settings.json" -Force
+Copy-Item .\examples\anthropic-client-presets\settings-claude-haiku-4-5-20251001.json "$HOME\.claude\settings.json" -Force
 ```
 
 Preset `claude-sonnet-4-5-20250929`:
 
 ```powershell
-Copy-Item .\assets\litellm-fork\settings-presets\settings-claude-sonnet-4-5-20250929.json "$HOME\.claude\settings.json" -Force
+Copy-Item .\examples\anthropic-client-presets\settings-claude-sonnet-4-5-20250929.json "$HOME\.claude\settings.json" -Force
 ```
 
 Preset `claude-opus-4-1-20250805`:
 
 ```powershell
-Copy-Item .\assets\litellm-fork\settings-presets\settings-claude-opus-4-1-20250805.json "$HOME\.claude\settings.json" -Force
+Copy-Item .\examples\anthropic-client-presets\settings-claude-opus-4-1-20250805.json "$HOME\.claude\settings.json" -Force
 ```
 
 Blocco completo per `kimi-k2.6`:

@@ -2,6 +2,48 @@
 
 This repository documents and packages a practical LiteLLM-based gateway for using OpenCode Go models through API-shape translation layers, while also carrying the fixes introduced in the upstream LiteLLM pull request for Anthropic message handling.
 
+> **What this repository enables**
+>
+> - Route **Anthropic-style clients** to **OpenAI-style upstream models**
+> - Keep a **single client-facing API shape** while changing upstream model families
+> - Preserve **reasoning content**, sanitize leaked `</think>` markers, and improve tool-loop fidelity
+
+## Visual overview
+
+### Protocol translation at a glance
+
+```text
+┌──────────────────────────┐
+│ Anthropic-style client   │
+│ e.g. Claude Code         │
+│ sends /v1/messages       │
+└────────────┬─────────────┘
+	     │
+	     ▼
+┌──────────────────────────┐
+│ LiteLLM local gateway    │
+│ route + translate + fix  │
+└───────┬──────────┬───────┘
+	│          │
+	│          └──────────────────────────────┐
+	▼                                         ▼
+┌──────────────────────────┐         ┌──────────────────────────┐
+│ OpenAI-style upstream    │         │ Anthropic-style upstream │
+│ /v1/chat/completions     │         │ /v1/messages             │
+│ e.g. Kimi K2.6           │         │ e.g. MiniMax M2.7        │
+└──────────────────────────┘         └──────────────────────────┘
+```
+
+### What the gateway is doing
+
+| Step | Function | Result |
+| --- | --- | --- |
+| 1 | Accept a client request in Anthropic `v1/messages` format | Client does not need to support multiple provider APIs |
+| 2 | Resolve the selected LiteLLM alias | A stable client-facing model name is preserved |
+| 3 | Route to the correct OpenCode Go upstream endpoint | The gateway chooses OpenAI-style or Anthropic-style transport |
+| 4 | Normalize the response back to Anthropic-compatible output | The client sees one consistent API contract |
+| 5 | Apply PR fixes for reasoning and `</think>` sanitation | Cleaner final text and more reliable tool loops |
+
 In practice, this setup allows a client that speaks Anthropic-style `v1/messages` to reach upstream providers that expose either:
 
 - OpenAI-compatible `v1/chat/completions` endpoints, or
@@ -24,6 +66,22 @@ The gateway is centered on LiteLLM, with a small but important patch set that im
 - a regression patch for the Anthropic message transformation path;
 - test scripts for validating proxy health, model routing, tool loops, and think-tag sanitization.
 
+### Typical use case
+
+```text
+Anthropic-only client
+	│
+	│ /v1/messages
+	▼
+LiteLLM gateway
+	│
+	│ translated /v1/chat/completions
+	▼
+OpenCode Go -> Kimi K2.6
+```
+
+This is the key capability: the client continues to speak Anthropic Messages, while the upstream model can remain OpenAI-compatible.
+
 ## Why the patch matters
 
 The upstream LiteLLM pull request referenced by this repository addresses concrete issues in the Anthropic message bridge:
@@ -39,7 +97,7 @@ This makes the gateway more robust when an Anthropic-format client is routed to 
 - `docs/` — setup guides and reference documentation
 - `docs/testing/` — validation procedure and test battery notes
 - `config/` — configuration templates
-- `examples/claude-code-settings/` — example client presets for Anthropic-style consumers
+- `examples/anthropic-client-presets/` — example client presets for Anthropic-style consumers
 - `patches/` — patch files that capture the LiteLLM changes
 - `scripts/` — helper scripts for install and startup workflows
 - `tests/proxy-battery/` — direct proxy regression and routing checks
@@ -72,10 +130,12 @@ Run the battery in `tests/proxy-battery/run-opencode-go-battery.py` against the 
 
 ## Example materials
 
-- `examples/claude-code-settings/` contains ready-made presets for Anthropic-style clients.
+- `examples/anthropic-client-presets/` contains ready-made presets for Anthropic-style clients.
 
 These files are examples, not a hard product requirement. The main value of this repository is the general LiteLLM gateway pattern plus the Anthropic bridge fixes.
 
 ## Upstream reference
 
 - LiteLLM PR: `BerriAI/litellm#26285`
+- Upstream repository: `https://github.com/BerriAI/litellm`
+- Fork used for the patch work: `https://github.com/malafronte/litellm`

@@ -98,7 +98,7 @@ These models should be configured as OpenAI-compatible upstream targets:
 
 For these models, the gateway should use:
 
-- `model: openai/<nome-modello>`
+- `model: openai/<model-name>`
 - `api_base: https://opencode.ai/zen/go/v1`
 
 ### 4.2 Family B — upstream `messages`
@@ -110,18 +110,18 @@ These models should be configured as Anthropic-compatible upstream targets:
 
 For these models, the gateway should use:
 
-- `model: anthropic/<nome-modello>`
+- `model: anthropic/<model-name>`
 - `api_base: https://opencode.ai/zen/go`
 
 Important note:
 
 for Anthropic-compatible upstream models, do not append `/v1/messages` to `api_base`, because LiteLLM adds the protocol path when needed.
 
-## 5. Cosa non cambia mai
+## 5. Stable settings
 
-Indipendentemente dal modello scelto, questi parametri restano stabili.
+Regardless of the selected model, some values remain stable.
 
-### 5.1 Parametri stabili in `settings.json`
+### 5.1 Stable values in Anthropic-style client settings
 
 ```json
 {
@@ -134,13 +134,13 @@ Indipendentemente dal modello scelto, questi parametri restano stabili.
 }
 ```
 
-Questi valori non dipendono dal modello:
+These values do not depend on the selected model:
 
 - `ANTHROPIC_BASE_URL`
 - `ANTHROPIC_AUTH_TOKEN`
 - `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS`
 
-### 5.2 Parametri stabili in `config.yaml`
+### 5.2 Stable values in `config.yaml`
 
 ```yaml
 litellm_settings:
@@ -152,37 +152,37 @@ general_settings:
   master_key: local-litellm-key
 ```
 
-Questi valori devono restare coerenti con il bridge gia validato.
+These values should remain aligned with the validated bridge behavior.
 
-## 6. Cosa cambia quando si cambia modello
+## 6. What changes when you switch models
 
-Per usare un modello OpenCode Go diverso, in pratica cambiano solo due aree.
+When switching to a different OpenCode Go model, only two areas normally change.
 
-### 6.1 In `settings.json`
+### 6.1 In client settings
 
-Devi cambiare questi due campi, mettendo lo stesso alias in entrambi:
+Update these two fields with the same exposed alias:
 
 - `ANTHROPIC_MODEL`
 - `ANTHROPIC_CUSTOM_MODEL_OPTION`
 
-Facoltativamente puoi aggiornare anche:
+Optionally, you can also update:
 
 - `ANTHROPIC_CUSTOM_MODEL_OPTION_NAME`
 - `ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION`
 
 ### 6.2 In `config.yaml`
 
-Devi avere un blocco `model_list` coerente con il modello scelto:
+You need a `model_list` entry that matches the chosen model:
 
-- `model_name`: alias esposto a `Claude Code`;
-- `litellm_params.model`: upstream reale con provider corretto;
-- `litellm_params.api_base`: endpoint corretto per la famiglia del modello.
+- `model_name`: alias exposed to the client;
+- `litellm_params.model`: real upstream model with the correct provider prefix;
+- `litellm_params.api_base`: correct endpoint for the model family.
 
-## 7. Tabella rapida: cosa impostare per ogni modello attuale
+## 7. Quick reference table
 
-La tabella seguente e il riferimento principale del documento.
+The following table is the main operational reference in this guide.
 
-| Modello OpenCode Go | Famiglia | `model_name` in `config.yaml` | `litellm_params.model` | `api_base` | Cosa mettere in `ANTHROPIC_MODEL` e `ANTHROPIC_CUSTOM_MODEL_OPTION` |
+| OpenCode Go model | Family | `model_name` in `config.yaml` | `litellm_params.model` | `api_base` | Client alias |
 | --- | --- | --- | --- | --- | --- |
 | `kimi-k2.5` | A | `kimi-k2.5` | `openai/kimi-k2.5` | `https://opencode.ai/zen/go/v1` | `kimi-k2.5` |
 | `kimi-k2.6` | A | `kimi-k2.6` | `openai/kimi-k2.6` | `https://opencode.ai/zen/go/v1` | `kimi-k2.6` |
@@ -197,15 +197,15 @@ La tabella seguente e il riferimento principale del documento.
 | `minimax-m2.5` | B | `minimax-m2.5` | `anthropic/minimax-m2.5` | `https://opencode.ai/zen/go` | `minimax-m2.5` |
 | `minimax-m2.7` | B | `minimax-m2.7` | `anthropic/minimax-m2.7` | `https://opencode.ai/zen/go` | `minimax-m2.7` |
 
-## 8. Configurazione pronta per tutti i modelli attuali
+## 8. Ready-to-use configuration baseline
 
-Se vuoi una base gia completa, puoi usare il template del repository:
+If you want a broader starting point, you can use the repository template:
 
-- `assets/litellm-fork/opencode-go-config.template.yaml`
+- `config/opencode-go-config.template.yaml`
 
-Questo template include gia i modelli attuali di entrambe le famiglie.
+This template can include current models from both upstream families.
 
-Una base completa equivalente e questa:
+An equivalent expanded baseline is:
 
 ```yaml
 model_list:
