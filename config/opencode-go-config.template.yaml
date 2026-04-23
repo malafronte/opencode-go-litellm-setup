@@ -1,0 +1,99 @@
+# Template di configurazione per usare piu modelli OpenCode Go dietro un proxy LiteLLM locale.
+#
+# Obiettivo:
+# - esporre alias stabili lato Claude Code;
+# - distinguere le famiglie di endpoint di OpenCode Go;
+# - evitare patch model-specifiche quando il problema reale e nella traduzione
+#   Anthropic -> OpenAI o nella gestione del reasoning.
+
+model_list:
+  # -------------------------------------------------------------------------
+  # Famiglia A: modelli esposti da OpenCode Go su /v1/chat/completions
+  # Questi modelli possono essere trattati come upstream OpenAI-compatible.
+  # -------------------------------------------------------------------------
+  - model_name: kimi-k2.6
+    litellm_params:
+      model: openai/kimi-k2.6
+      api_base: https://opencode.ai/zen/go/v1
+      api_key: os.environ/OPENCODE_GO_API_KEY
+
+  - model_name: kimi-k2.5
+    litellm_params:
+      model: openai/kimi-k2.5
+      api_base: https://opencode.ai/zen/go/v1
+      api_key: os.environ/OPENCODE_GO_API_KEY
+
+  - model_name: glm-5
+    litellm_params:
+      model: openai/glm-5
+      api_base: https://opencode.ai/zen/go/v1
+      api_key: os.environ/OPENCODE_GO_API_KEY
+
+  - model_name: glm-5.1
+    litellm_params:
+      model: openai/glm-5.1
+      api_base: https://opencode.ai/zen/go/v1
+      api_key: os.environ/OPENCODE_GO_API_KEY
+
+  - model_name: mimo-v2-pro
+    litellm_params:
+      model: openai/mimo-v2-pro
+      api_base: https://opencode.ai/zen/go/v1
+      api_key: os.environ/OPENCODE_GO_API_KEY
+
+  - model_name: mimo-v2-omni
+    litellm_params:
+      model: openai/mimo-v2-omni
+      api_base: https://opencode.ai/zen/go/v1
+      api_key: os.environ/OPENCODE_GO_API_KEY
+
+  - model_name: mimo-v2.5-pro
+    litellm_params:
+      model: openai/mimo-v2.5-pro
+      api_base: https://opencode.ai/zen/go/v1
+      api_key: os.environ/OPENCODE_GO_API_KEY
+
+  - model_name: mimo-v2.5
+    litellm_params:
+      model: openai/mimo-v2.5
+      api_base: https://opencode.ai/zen/go/v1
+      api_key: os.environ/OPENCODE_GO_API_KEY
+
+  - model_name: qwen3.5-plus
+    litellm_params:
+      model: openai/qwen3.5-plus
+      api_base: https://opencode.ai/zen/go/v1
+      api_key: os.environ/OPENCODE_GO_API_KEY
+
+  - model_name: qwen3.6-plus
+    litellm_params:
+      model: openai/qwen3.6-plus
+      api_base: https://opencode.ai/zen/go/v1
+      api_key: os.environ/OPENCODE_GO_API_KEY
+
+  # -------------------------------------------------------------------------
+  # Famiglia B: modelli esposti da OpenCode Go su /v1/messages
+  # Questi modelli sono Anthropic-compatible e non richiedono la traduzione
+  # Anthropic -> OpenAI che serve invece alla famiglia A.
+  # NOTE: per provider Anthropic-compatible si passa la base senza /v1/messages,
+  # perche LiteLLM aggiunge gia quel suffisso.
+  # -------------------------------------------------------------------------
+  - model_name: minimax-m2.5
+    litellm_params:
+      model: anthropic/minimax-m2.5
+      api_base: https://opencode.ai/zen/go
+      api_key: os.environ/OPENCODE_GO_API_KEY
+
+  - model_name: minimax-m2.7
+    litellm_params:
+      model: anthropic/minimax-m2.7
+      api_base: https://opencode.ai/zen/go
+      api_key: os.environ/OPENCODE_GO_API_KEY
+
+litellm_settings:
+  drop_params: true
+  modify_params: true
+  use_chat_completions_url_for_anthropic_messages: true
+
+general_settings:
+  master_key: local-litellm-key
