@@ -1,29 +1,29 @@
-# Guida - Claude Code con i modelli OpenCode Go tramite LiteLLM
+# OpenCode Go + LiteLLM Gateway Setup Guide
 
-## 1. Scopo del documento
+## 1. Purpose
 
-Questa guida descrive come usare `Claude Code` con i modelli attuali di `OpenCode Go` tramite un gateway locale `LiteLLM`.
+This guide explains how to expose OpenCode Go models through a local LiteLLM gateway when the client and the upstream provider do not speak the same API dialect.
 
-L'obiettivo non e piu documentare solo `Kimi K2.6`, ma spiegare in modo operativo:
+The main operational goal is to document:
 
-- quali parametri restano invariati per tutti i modelli;
-- quali parametri cambiano quando si vuole usare un modello diverso;
-- come distinguere i modelli esposti su endpoint diversi;
-- come capire rapidamente cosa inserire in `settings.json` e in `config.yaml`.
+- which gateway parameters remain stable across models;
+- which parameters change when you switch to a different upstream model;
+- how to distinguish model families exposed through different endpoint styles;
+- how to map a client-facing alias to the correct upstream provider configuration.
 
-Il documento e pensato per utenti che vogliono scegliere un modello OpenCode Go e sapere subito quali campi modificare per usarlo da `Claude Code`.
+This document is intentionally broader than a single client integration. An Anthropic-style consumer such as `Claude Code` is just one example.
 
-Per una versione breve da distribuire a studenti o colleghi, si veda anche `docs/cheat-sheet-claude-code-opencode-go-via-litellm.md`.
+For a shorter operational summary, see `docs/model-routing-reference.md`.
 
-### Tabella compatta: modello -> 3 righe da cambiare
+### Compact rule: model selection in three steps
 
-La regola pratica e questa:
+The practical rule is:
 
-1. in `config.yaml` cambia `litellm_params.model`;
-2. in `config.yaml` cambia `api_base` in base alla famiglia del modello;
-3. in `settings.json` imposta lo stesso alias in `ANTHROPIC_MODEL` e `ANTHROPIC_CUSTOM_MODEL_OPTION`.
+1. change `litellm_params.model` in `config.yaml`;
+2. change `api_base` in `config.yaml` according to the model family;
+3. set the same exposed alias in the client configuration.
 
-| Modello | `litellm_params.model` | `api_base` | Alias da mettere sia in `ANTHROPIC_MODEL` sia in `ANTHROPIC_CUSTOM_MODEL_OPTION` |
+| Model | `litellm_params.model` | `api_base` | Client-facing alias |
 | --- | --- | --- | --- |
 | `kimi-k2.5` | `openai/kimi-k2.5` | `https://opencode.ai/zen/go/v1` | `kimi-k2.5` |
 | `kimi-k2.6` | `openai/kimi-k2.6` | `https://opencode.ai/zen/go/v1` | `kimi-k2.6` |
@@ -38,52 +38,52 @@ La regola pratica e questa:
 | `minimax-m2.5` | `anthropic/minimax-m2.5` | `https://opencode.ai/zen/go` | `minimax-m2.5` |
 | `minimax-m2.7` | `anthropic/minimax-m2.7` | `https://opencode.ai/zen/go` | `minimax-m2.7` |
 
-## 2. Contesto tecnico e motivo del workaround
+## 2. Technical context
 
-`Claude Code` usa un protocollo Anthropic-style, in particolare `v1/messages`.
+Many Anthropic-style clients only support the `v1/messages` API shape.
 
-`OpenCode Go` non espone tutti i modelli nello stesso formato:
+OpenCode Go does not expose every model through the same upstream interface:
 
-- alcuni modelli usano un endpoint OpenAI-compatible `v1/chat/completions`;
-- altri modelli usano un endpoint Anthropic-compatible `v1/messages`.
+- some models are available through OpenAI-compatible `v1/chat/completions`;
+- others are available through Anthropic-compatible `v1/messages`.
 
-Per questo non basta impostare direttamente l'endpoint di `OpenCode Go` in `Claude Code`.
-Serve un proxy locale `LiteLLM` con queste responsabilita:
+Because of this, a direct client-to-provider configuration is not always possible.
+LiteLLM fills that gap by:
 
-1. ricevere richieste Anthropic-style da `Claude Code`;
-2. instradarle verso il provider remoto corretto;
-3. adattare il protocollo quando il modello upstream e OpenAI-compatible;
-4. restituire una risposta compatibile con il client.
+1. receiving Anthropic-style requests from the client;
+2. routing them to the correct upstream provider endpoint;
+3. translating the protocol when the upstream model is OpenAI-compatible;
+4. returning a response that matches the client-facing API contract.
 
-## 3. Architettura logica della soluzione
+## 3. Logical architecture
 
-La catena generale e questa:
+The general request path is:
 
 ```text
-Claude Code
+Anthropic-style client
   -> http://127.0.0.1:4000/v1/messages
-LiteLLM locale
-  -> OpenCode Go endpoint corretto per il modello scelto
+Local LiteLLM gateway
+  -> OpenCode Go endpoint selected for the alias
 OpenCode Go
-  -> modello finale
+  -> target model
 ```
 
-I componenti coinvolti restano quattro:
+The main components are:
 
-| Componente | Ruolo | Note operative |
+| Component | Role | Operational notes |
 | --- | --- | --- |
-| `Claude Code` | client locale | parla Anthropic-style |
-| `LiteLLM` | gateway/proxy locale | instrada e adatta il protocollo |
-| `OpenCode Go` | provider remoto | richiede API key valida |
-| modello finale | modello selezionato | dipende dall'alias scelto nel proxy |
+| Anthropic-style client | local client | speaks `v1/messages` |
+| `LiteLLM` | local gateway/proxy | routes and translates protocol shape |
+| `OpenCode Go` | remote provider | requires a valid API key |
+| target model | selected model | depends on the alias configured in LiteLLM |
 
-## 4. Punto chiave: non tutti i modelli usano lo stesso endpoint
+## 4. Key point: not all models use the same endpoint shape
 
-I modelli OpenCode Go attuali vanno distinti in due famiglie.
+Current OpenCode Go models can be split into two families.
 
-### 4.1 Famiglia A - upstream `chat/completions`
+### 4.1 Family A — upstream `chat/completions`
 
-Questi modelli vanno configurati come upstream OpenAI-compatible:
+These models should be configured as OpenAI-compatible upstream targets:
 
 - `kimi-k2.5`
 - `kimi-k2.6`
@@ -96,26 +96,26 @@ Questi modelli vanno configurati come upstream OpenAI-compatible:
 - `qwen3.5-plus`
 - `qwen3.6-plus`
 
-Per questi modelli il proxy usa:
+For these models, the gateway should use:
 
 - `model: openai/<nome-modello>`
 - `api_base: https://opencode.ai/zen/go/v1`
 
-### 4.2 Famiglia B - upstream `messages`
+### 4.2 Family B — upstream `messages`
 
-Questi modelli vanno configurati come upstream Anthropic-compatible:
+These models should be configured as Anthropic-compatible upstream targets:
 
 - `minimax-m2.5`
 - `minimax-m2.7`
 
-Per questi modelli il proxy usa:
+For these models, the gateway should use:
 
 - `model: anthropic/<nome-modello>`
 - `api_base: https://opencode.ai/zen/go`
 
-Nota importante:
+Important note:
 
-per i modelli Anthropic-compatible non si mette `/v1/messages` nella `api_base`, perche quel suffisso viene aggiunto da `LiteLLM`.
+for Anthropic-compatible upstream models, do not append `/v1/messages` to `api_base`, because LiteLLM adds the protocol path when needed.
 
 ## 5. Cosa non cambia mai
 

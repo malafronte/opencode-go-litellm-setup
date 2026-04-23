@@ -7,6 +7,14 @@ In practice, this setup allows a client that speaks Anthropic-style `v1/messages
 - OpenAI-compatible `v1/chat/completions` endpoints, or
 - Anthropic-compatible `v1/messages` endpoints.
 
+For example:
+
+- a client such as `Claude Code`, which only speaks the Anthropic Messages API, can send `v1/messages` requests to LiteLLM;
+- LiteLLM can then translate those requests into OpenAI-style `v1/chat/completions` calls for an upstream model such as `Kimi K2.6` served through OpenCode Go;
+- the response is translated back into Anthropic-compatible output before being returned to the client.
+
+The same gateway can also forward Anthropic-style requests to upstream models that already expose native `v1/messages` semantics, such as Anthropic-compatible providers, without requiring the client to change its protocol.
+
 The gateway is centered on LiteLLM, with a small but important patch set that improves fidelity when handling reasoning-bearing Anthropic responses.
 
 ## What this repository provides
@@ -58,13 +66,13 @@ Run the battery in `tests/proxy-battery/run-opencode-go-battery.py` against the 
 
 ## Documentation
 
-- `docs/guida-claude-code-opencode-go-via-litellm.md` — full setup walkthrough
-- `docs/cheat-sheet-claude-code-opencode-go-via-litellm.md` — quick model mapping reference
+- `docs/gateway-setup-guide.md` — full setup and configuration guide
+- `docs/model-routing-reference.md` — compact model mapping reference
 - `docs/testing/opencode-go-test-battery.md` — structured validation plan
 
 ## Example materials
 
-- `examples/claude-code-settings/` contains ready-made example presets for Anthropic-style desktop clients.
+- `examples/claude-code-settings/` contains ready-made presets for Anthropic-style clients.
 
 These files are examples, not a hard product requirement. The main value of this repository is the general LiteLLM gateway pattern plus the Anthropic bridge fixes.
 
