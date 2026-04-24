@@ -28,11 +28,12 @@ general_settings:
 
 ## Model families
 
-### Family A — OpenAI-compatible upstream
+### Family A - `chat/completions` upstream
 
 Use:
 
-- `litellm_params.model = openai/<model>`
+- `litellm_params.model = openai/<model>` for most Family A models
+- `litellm_params.model = moonshot/kimi-k2.6` for `kimi-k2.6`
 - `api_base = https://opencode.ai/zen/go/v1`
 
 Models:
@@ -67,7 +68,7 @@ Do not append `/v1/messages` to `api_base`; LiteLLM adds the request path when n
 | Model | Upstream family | `litellm_params.model` | `api_base` | Suggested alias |
 | --- | --- | --- | --- | --- |
 | `kimi-k2.5` | Family A | `openai/kimi-k2.5` | `https://opencode.ai/zen/go/v1` | `kimi-k2.5` |
-| `kimi-k2.6` | Family A | `openai/kimi-k2.6` | `https://opencode.ai/zen/go/v1` | `kimi-k2.6` |
+| `kimi-k2.6` | Family A | `moonshot/kimi-k2.6` | `https://opencode.ai/zen/go/v1` | `kimi-k2.6` |
 | `glm-5` | Family A | `openai/glm-5` | `https://opencode.ai/zen/go/v1` | `glm-5` |
 | `glm-5.1` | Family A | `openai/glm-5.1` | `https://opencode.ai/zen/go/v1` | `glm-5.1` |
 | `mimo-v2-pro` | Family A | `openai/mimo-v2-pro` | `https://opencode.ai/zen/go/v1` | `mimo-v2-pro` |

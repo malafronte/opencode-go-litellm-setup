@@ -36,7 +36,7 @@ Use Anthropic-style clients with OpenCode Go models through a local LiteLLM gate
 ### Windows
 
 ```powershell
-pwsh -File .\scripts\install-litellm-fork.ps1 -Repo "malafronte/litellm" -Ref "v1.83.11-nightly-opencode-go-pr26285"
+pwsh -File .\scripts\install-litellm-fork.ps1 -Repo "malafronte/litellm" -Ref "v1.83.11-nightly-opencode-go-pr26285-moonshot1"
 New-Item -ItemType Directory -Force -Path "$HOME\.claude\litellm" | Out-Null
 Copy-Item .\config\opencode-go-config.template.yaml "$HOME\.claude\litellm\config.yaml" -Force
 
@@ -47,18 +47,31 @@ $env:OPENCODE_GO_API_KEY = "<YOUR_OPENCODE_GO_API_KEY>"
 # pwsh -File "$HOME\.claude\litellm\set-opencode-go-key.ps1" -ApiKey "<YOUR_OPENCODE_GO_API_KEY>"
 # Then open a new terminal before starting the gateway.
 
+# Optional only if your network requires an outbound HTTP proxy:
+# $env:HTTP_PROXY = "http://proxy:3128"
+# $env:HTTPS_PROXY = "http://proxy:3128"
+# $env:NO_PROXY = "127.0.0.1,localhost"
+
 pwsh -File .\scripts\start-litellm-fork.ps1 -ConfigPath "$HOME\.claude\litellm\config.yaml"
 ```
 
 ### Linux/macOS
 
 ```bash
-./scripts/install-litellm-fork.sh "malafronte/litellm" "v1.83.11-nightly-opencode-go-pr26285"
+./scripts/install-litellm-fork.sh "malafronte/litellm" "v1.83.11-nightly-opencode-go-pr26285-moonshot1"
 mkdir -p "$HOME/.claude/litellm"
 cp ./config/opencode-go-config.template.yaml "$HOME/.claude/litellm/config.yaml"
 export OPENCODE_GO_API_KEY="<YOUR_OPENCODE_GO_API_KEY>"
+
+# Optional only if your network requires an outbound HTTP proxy:
+# export HTTP_PROXY="http://proxy:3128"
+# export HTTPS_PROXY="http://proxy:3128"
+# export NO_PROXY="127.0.0.1,localhost"
+
 ./scripts/start-litellm-fork.sh "$HOME/.claude/litellm-runtime" "$HOME/.claude/litellm/config.yaml"
 ```
+
+LiteLLM reads the standard outbound proxy environment variables from the process environment. If you need a school or corporate proxy, set `HTTP_PROXY` and `HTTPS_PROXY` in the same terminal that starts the gateway, and usually keep `NO_PROXY=127.0.0.1,localhost` so local traffic does not loop through the proxy.
 
 Client values to keep aligned:
 
@@ -158,6 +171,8 @@ Those fixes matter most when an Anthropic-format client is routed through LiteLL
 ### 2. Configure LiteLLM
 
 Use [`config/opencode-go-config.template.yaml`](config/opencode-go-config.template.yaml) as the starting template, then set `OPENCODE_GO_API_KEY` in the environment used by the proxy process.
+
+If your network requires an outbound HTTP proxy, set `HTTP_PROXY`, `HTTPS_PROXY`, and usually `NO_PROXY=127.0.0.1,localhost` in that same process environment before starting LiteLLM.
 
 ### 3. Start the gateway
 

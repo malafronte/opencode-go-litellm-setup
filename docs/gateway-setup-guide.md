@@ -34,7 +34,7 @@ This repository is designed to install LiteLLM from the fork at:
 
 The [helper scripts](../scripts/) are already prepared for the validated ref:
 
-- `v1.83.11-nightly-opencode-go-pr26285`
+- `v1.83.11-nightly-opencode-go-pr26285-moonshot1`
 
 If you use the provided install scripts, pass the fork explicitly so there is no ambiguity.
 
@@ -43,7 +43,7 @@ If you use the provided install scripts, pass the fork explicitly so there is no
 1. Install the patched LiteLLM runtime from the fork:
 
 ```powershell
-pwsh -File .\scripts\install-litellm-fork.ps1 -Repo "malafronte/litellm" -Ref "v1.83.11-nightly-opencode-go-pr26285"
+pwsh -File .\scripts\install-litellm-fork.ps1 -Repo "malafronte/litellm" -Ref "v1.83.11-nightly-opencode-go-pr26285-moonshot1"
 ```
 
 2. Create your LiteLLM config from the repository template:
@@ -68,6 +68,16 @@ pwsh -File "$HOME\.claude\litellm\set-opencode-go-key.ps1" -ApiKey "<YOUR_OPENCO
 ```
 
 If you use the persistent option, open a new terminal before starting the gateway so the new session inherits the saved variable.
+
+If your network requires an outbound HTTP proxy, set it in that same terminal before starting the gateway:
+
+```powershell
+$env:HTTP_PROXY = "http://proxy:3128"
+$env:HTTPS_PROXY = "http://proxy:3128"
+$env:NO_PROXY = "127.0.0.1,localhost"
+```
+
+Keep these values in the shell or service environment that starts LiteLLM. This is the simplest setup and avoids committing local network settings into config files.
 
 4. Start the gateway:
 
@@ -98,7 +108,7 @@ At that point, the fastest next read is:
 1. Install the patched LiteLLM runtime from the fork:
 
 ```bash
-./scripts/install-litellm-fork.sh "malafronte/litellm" "v1.83.11-nightly-opencode-go-pr26285"
+./scripts/install-litellm-fork.sh "malafronte/litellm" "v1.83.11-nightly-opencode-go-pr26285-moonshot1"
 ```
 
 2. Create your LiteLLM config from the repository template:
@@ -114,6 +124,16 @@ cp ./config/opencode-go-config.template.yaml "$HOME/.claude/litellm/config.yaml"
 export OPENCODE_GO_API_KEY="<YOUR_OPENCODE_GO_API_KEY>"
 ```
 
+If your network requires an outbound HTTP proxy, set it in that same shell before starting the gateway:
+
+```bash
+export HTTP_PROXY="http://proxy:3128"
+export HTTPS_PROXY="http://proxy:3128"
+export NO_PROXY="127.0.0.1,localhost"
+```
+
+Keep these values in the shell or service environment that starts LiteLLM. This is the simplest setup and avoids committing local network settings into config files.
+
 4. Start the gateway:
 
 ```bash
@@ -125,7 +145,7 @@ export OPENCODE_GO_API_KEY="<YOUR_OPENCODE_GO_API_KEY>"
 ### What is happening in those 2 minutes
 
 - the install script creates a dedicated local LiteLLM runtime;
-- the runtime is installed from `malafronte/litellm` at ref `v1.83.11-nightly-opencode-go-pr26285`;
+- the runtime is installed from `malafronte/litellm` at ref `v1.83.11-nightly-opencode-go-pr26285-moonshot1`;
 - the config template exposes ready-to-edit model aliases;
 - the startup script launches the gateway on `http://127.0.0.1:4000`;
 - your client only needs to target that local proxy.
@@ -164,7 +184,7 @@ The practical rule is:
 | Model | `litellm_params.model` | `api_base` | Client-facing alias |
 | --- | --- | --- | --- |
 | `kimi-k2.5` | `openai/kimi-k2.5` | `https://opencode.ai/zen/go/v1` | `kimi-k2.5` |
-| `kimi-k2.6` | `openai/kimi-k2.6` | `https://opencode.ai/zen/go/v1` | `kimi-k2.6` |
+| `kimi-k2.6` | `moonshot/kimi-k2.6` | `https://opencode.ai/zen/go/v1` | `kimi-k2.6` |
 | `glm-5` | `openai/glm-5` | `https://opencode.ai/zen/go/v1` | `glm-5` |
 | `glm-5.1` | `openai/glm-5.1` | `https://opencode.ai/zen/go/v1` | `glm-5.1` |
 | `mimo-v2-pro` | `openai/mimo-v2-pro` | `https://opencode.ai/zen/go/v1` | `mimo-v2-pro` |
@@ -323,7 +343,7 @@ The following table is the main operational reference in this guide.
 | OpenCode Go model | Family | `model_name` in `config.yaml` | `litellm_params.model` | `api_base` | Client alias |
 | --- | --- | --- | --- | --- | --- |
 | `kimi-k2.5` | A | `kimi-k2.5` | `openai/kimi-k2.5` | `https://opencode.ai/zen/go/v1` | `kimi-k2.5` |
-| `kimi-k2.6` | A | `kimi-k2.6` | `openai/kimi-k2.6` | `https://opencode.ai/zen/go/v1` | `kimi-k2.6` |
+| `kimi-k2.6` | A | `kimi-k2.6` | `moonshot/kimi-k2.6` | `https://opencode.ai/zen/go/v1` | `kimi-k2.6` |
 | `glm-5` | A | `glm-5` | `openai/glm-5` | `https://opencode.ai/zen/go/v1` | `glm-5` |
 | `glm-5.1` | A | `glm-5.1` | `openai/glm-5.1` | `https://opencode.ai/zen/go/v1` | `glm-5.1` |
 | `mimo-v2-pro` | A | `mimo-v2-pro` | `openai/mimo-v2-pro` | `https://opencode.ai/zen/go/v1` | `mimo-v2-pro` |
@@ -343,13 +363,15 @@ If you want a broader starting point, you can use the repository template:
 
 This template can include current models from both upstream families.
 
+`kimi-k2.6` still belongs to Family A and still uses `https://opencode.ai/zen/go/v1`, but it is routed as `moonshot/kimi-k2.6` so LiteLLM applies Moonshot-specific normalization for tool schemas.
+
 An equivalent expanded baseline is:
 
 ```yaml
 model_list:
   - model_name: kimi-k2.6
     litellm_params:
-      model: openai/kimi-k2.6
+      model: moonshot/kimi-k2.6
       api_base: https://opencode.ai/zen/go/v1
       api_key: os.environ/OPENCODE_GO_API_KEY
 
@@ -558,6 +580,14 @@ to the alias of the model you want to use.
 
 ### 12.5 Start the local gateway
 
+If your network requires an outbound HTTP proxy, export it in this same terminal before startup:
+
+```powershell
+$env:HTTP_PROXY = "http://proxy:3128"
+$env:HTTPS_PROXY = "http://proxy:3128"
+$env:NO_PROXY = "127.0.0.1,localhost"
+```
+
 ```powershell
 pwsh -File "$HOME\.claude\litellm\start-litellm.ps1"
 ```
@@ -580,6 +610,14 @@ After changing the model or proxy, it is always best to open a new client sessio
 
 ```bash
 export OPENCODE_GO_API_KEY="<OPENCODE_GO_API_KEY>"
+```
+
+If your network requires an outbound HTTP proxy, export it in this same shell before starting LiteLLM:
+
+```bash
+export HTTP_PROXY="http://proxy:3128"
+export HTTPS_PROXY="http://proxy:3128"
+export NO_PROXY="127.0.0.1,localhost"
 ```
 
 ### 13.2 Use a `config.yaml` consistent with the model family
@@ -627,7 +665,25 @@ Likely causes:
 - the terminal was not reopened;
 - the key exists in the user environment but not in the current session.
 
-### 14.2 `Invalid model name passed`
+### 14.2 School or corporate network requires an outbound proxy
+
+Set the proxy in the same process environment that starts LiteLLM:
+
+```powershell
+$env:HTTP_PROXY = "http://proxy:3128"
+$env:HTTPS_PROXY = "http://proxy:3128"
+$env:NO_PROXY = "127.0.0.1,localhost"
+```
+
+```bash
+export HTTP_PROXY="http://proxy:3128"
+export HTTPS_PROXY="http://proxy:3128"
+export NO_PROXY="127.0.0.1,localhost"
+```
+
+Use `NO_PROXY` for `127.0.0.1` and `localhost` so local gateway traffic does not loop through the upstream proxy.
+
+### 14.3 `Invalid model name passed`
 
 This error means that `ANTHROPIC_MODEL` does not match a `model_name` exposed in `config.yaml`.
 
@@ -637,7 +693,7 @@ Fix:
 2. verify that it exists in `model_list`;
 3. restart the proxy.
 
-### 14.3 Routing to `v1/responses`
+### 14.4 Routing to `v1/responses`
 
 If the proxy uses the wrong path for Family A models, verify:
 
@@ -646,7 +702,7 @@ litellm_settings:
   use_chat_completions_url_for_anthropic_messages: true
 ```
 
-### 14.4 `reasoning_content` errors
+### 14.5 `reasoning_content` errors
 
 For multi-turn tool-use turns, keep:
 
@@ -655,7 +711,7 @@ litellm_settings:
   modify_params: true
 ```
 
-### 14.5 Special case `minimax-m2.5`
+### 14.6 Special case `minimax-m2.5`
 
 In automated testing, a specific case was observed: the first tool-use turn can stop at `max_tokens` and with the `<minimax:tool_call>` marker instead of a structured `tool_use` block.
 
@@ -796,7 +852,7 @@ Example:
 ```yaml
 - model_name: claude-haiku-4-5-20251001
   litellm_params:
-    model: openai/kimi-k2.6
+    model: moonshot/kimi-k2.6
     api_base: https://opencode.ai/zen/go/v1
     api_key: os.environ/OPENCODE_GO_API_KEY
 ```

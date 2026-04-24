@@ -42,25 +42,25 @@ If you want to preserve those aliases and add direct Family A and Family B model
 model_list:
 	- model_name: kimi-k2.6
 		litellm_params:
-			model: openai/kimi-k2.6
+			model: moonshot/kimi-k2.6
 			api_base: https://opencode.ai/zen/go/v1
 			api_key: os.environ/OPENCODE_GO_API_KEY
 
 	- model_name: claude-haiku-4-5-20251001
 		litellm_params:
-			model: openai/kimi-k2.6
+			model: moonshot/kimi-k2.6
 			api_base: https://opencode.ai/zen/go/v1
 			api_key: os.environ/OPENCODE_GO_API_KEY
 
 	- model_name: claude-sonnet-4-5-20250929
 		litellm_params:
-			model: openai/kimi-k2.6
+			model: moonshot/kimi-k2.6
 			api_base: https://opencode.ai/zen/go/v1
 			api_key: os.environ/OPENCODE_GO_API_KEY
 
 	- model_name: claude-opus-4-1-20250805
 		litellm_params:
-			model: openai/kimi-k2.6
+			model: moonshot/kimi-k2.6
 			api_base: https://opencode.ai/zen/go/v1
 			api_key: os.environ/OPENCODE_GO_API_KEY
 
@@ -154,7 +154,7 @@ At the moment, the active local `config.yaml` exposes these aliases:
 - `claude-sonnet-4-5-20250929`
 - `claude-opus-4-1-20250805`
 
-In the current setup, all four aliases point to the same upstream target: `openai/kimi-k2.6`.
+In the current setup, all four aliases point to the same upstream target: `moonshot/kimi-k2.6`.
 This means the battery currently validates mostly:
 
 - correct alias resolution by the proxy;

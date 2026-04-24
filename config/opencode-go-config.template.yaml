@@ -9,11 +9,13 @@
 model_list:
   # -------------------------------------------------------------------------
   # Family A: models exposed by OpenCode Go on /v1/chat/completions
-  # These models can be treated as OpenAI-compatible upstreams.
+  # Most of these models can be treated as OpenAI-compatible upstreams.
+  # Kimi uses the Moonshot provider prefix so LiteLLM applies the
+  # provider-specific tool-schema normalization needed for MCP-heavy clients.
   # -------------------------------------------------------------------------
   - model_name: kimi-k2.6
     litellm_params:
-      model: openai/kimi-k2.6
+      model: moonshot/kimi-k2.6
       api_base: https://opencode.ai/zen/go/v1
       api_key: os.environ/OPENCODE_GO_API_KEY
 
